@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="apple-itunes-app" content="app-id=1638906106, app-clip-bundle-id=com.capp.poplive.Clip, app-clip-display=card">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+	
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;900&display=swap" rel="stylesheet">
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700&family=Roboto:wght@900&display=swap" rel="stylesheet">
+
+	<title>Tap to see my listening activity</title>
+	<meta name="description" content="see what I ❤️ RAILING JEFFERY!! is playing. on your homescreen.">
+
+	<meta property="og:type" content="website">
+	<meta property="og:title" content="Tap to see my listening activity">
+	<meta property="og:description" content="see what I ❤️ RAILING JEFFERY!! is playing. on your homescreen.">
+	<meta property="og:image" content="https://cappabimg.b-cdn.net/bunny/invite-preview/9/3a/3a/31q2zgx7zeapbvb2awel4fa5vx2e">
+
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:site" content="@AirbudsWidget">
+	<meta name="twitter:title" content="Tap to see my listening activity">
+	<meta name="twitter:description" content="see what I ❤️ RAILING JEFFERY!! is playing. on your homescreen.">
+	<meta name="twitter:image" content="https://cappabimg.b-cdn.net/bunny/invite-preview/9/3a/3a/31q2zgx7zeapbvb2awel4fa5vx2e">
+	<meta name="twitter:app:id:iphone" content="id1638906106">
+	<meta name="twitter:app:name:iphone" content="Tap to see my listening activity">
+	<meta name="twitter:app:country" content="US">
+
+	<meta property="al:ios:app_store_id" content="id1638906106">
+	<meta property="al:ios:app_name" content="Tap to see my listening activity">
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', async function() {
+			
+			const ua = navigator.userAgent.toLowerCase()
+			const isAndroid = ua.includes('android')
+			const isIPhone = (navigator.userAgent.match(/iPhone/i)) ||(navigator.userAgent.match(/iPad/i))
+
+			var selector = "#downloadLink"
+			if(!isAndroid && !isIPhone) {
+				
+				selector = "#downloadLink"
+			} else if(isAndroid) {
+				selector = "#downloadLinkPlayStore"
+				document.body.querySelector("#downloadLink").remove()
+			} else if(isIPhone) {
+				document.body.querySelector("#downloadLinkPlayStore").remove()
+			}
+
+			
+			const closeButton = document.getElementById('closeButton');
+			closeButton.addEventListener('click', () => {
+				document.querySelector('#infoContainer').style.display = 'none';
+			});
+
+			const infoButton = document.getElementById('infoButton');
+			infoButton.addEventListener('click', () => {
+				document.querySelector('#infoContainer').style.display = 'block';
+			});
+
+			
+			
+			
+			
+			const appAutoOpenURL = ""
+			if (appAutoOpenURL) {
+				window.location = appAutoOpenURL
+			}
+
+			const appTapOpenURL = "poplive:\/\/user\/31q2zgx7zeapbvb2awel4fa5vx2e\/lUhkpyD7Ek"
+
+			const openInAppLink = document.getElementById('openInAppLink')
+			openInAppLink.addEventListener('click', () => {
+				window.location = appTapOpenURL
+			});
+
+			
+			const inviteId = "ivt-lUhkpyD7Ek@i.airbuds.fm"
+			if (inviteId) { 
+				document.body.querySelector(selector).setAttribute("data-clipboard-text", inviteId)
+
+				var clipboard = new ClipboardJS(selector);
+				clipboard.on('success', function (e) {
+					window.location = "\/31q2zgx7zeapbvb2awel4fa5vx2e\/lUhkpyD7Ek\/redirect?1788997221381";
+				});
+				clipboard.on('error', function (e) {
+					window.location = "\/31q2zgx7zeapbvb2awel4fa5vx2e\/lUhkpyD7Ek\/redirect?1788997221381";
+				});
+
+				if(!isAndroid && !isIPhone) {
+					document.body.querySelector("#downloadLinkPlayStore").setAttribute("data-clipboard-text", inviteId)
+					
+					var clipboard = new ClipboardJS(selector);
+					clipboard.on('success', function (e) {
+						window.location = "\/31q2zgx7zeapbvb2awel4fa5vx2e\/lUhkpyD7Ek\/redirect?1788997221381";
+					});
+					clipboard.on('error', function (e) {
+						window.location = "\/31q2zgx7zeapbvb2awel4fa5vx2e\/lUhkpyD7Ek\/redirect?1788997221381";
+					});
+				}
+			}
+
+			
+			
+			
+			
+			
+			
+			
+			
+			const installedCheckID = ""
+			if (!appAutoOpenURL && installedCheckID && navigator.getInstalledRelatedApps) {
+				try {
+					const related = await navigator.getInstalledRelatedApps()
+					if (related.some(app => app.id === installedCheckID)) {
+						window.location = appTapOpenURL
+					}
+				} catch (err) {
+					
+				}
+			}
+		}, false)
+
+		
+
+	</script>
+
+	<style type="text/css">
+
+
+		html {
+		    height: 100%;
+			font-family: 'Roboto', sans-serif;
+			background: rgb(0,0,0);
+			background: linear-gradient(180deg, rgba(155, 138, 255, 0.20) 0%, rgba(0, 0, 0, 0.00) 100%), linear-gradient(180deg, #242424 0%, #141414 100%), linear-gradient(180deg, #313030 0.25%, #201E1E 49.22%, #1B1818 99.74%);
+		}
+
+		body {
+			background: url('/_assets/invite_background.png');
+			background-size: cover;
+			display: flex;
+			color: white;
+			width: 100%;
+			height: 100%;
+			display: flex;
+			text-align: center;
+			flex-direction: column;
+			align-items: center;
+			margin: 0;
+		}
+
+		header {
+			margin-top: 17%;
+			text-align: center;
+			vertical-align: center;
+			display: flex;
+			flex-direction: column;
+			align-content: center;
+			align-items: center;
+			flex-grow: 1;
+    		justify-content: center;
+		}
+
+		header h1 {
+			text-align: center;
+			font-family: 'SF Pro', 'Roboto', sans-serif;
+			font-size: 2em;
+			font-style: normal;
+			font-weight: 700;
+			line-height: normal;
+			letter-spacing: -0.4px;
+			margin: 0; padding: 0;
+		}
+
+		header h3 {
+			color: rgba(255, 255, 255, 0.70);
+			text-align: center;
+			font-family: SF Pro Display, 'Roboto', sans-serif;
+			font-size: 1.2em;
+			font-style: normal;
+			font-weight: 400;
+			margin: 0; padding: 0;
+			margin-top: 0.7em;
+		}
+
+		#ticket {
+			width: 50%;
+			max-height: 60%;
+			object-fit: contain;
+		}
+
+		.downloadButton img {
+			width: 1.5em;
+			height: 1.5em;
+			margin-right: 1em;
+			margin-top: 1.2em;
+		}
+
+		.downloadButton {
+			font-family: sans-serif;
+			display: flex;
+			justify-content: center;
+			color: black;
+			background: white;
+			border-radius: 2em;
+			height: 4em;
+			width: 80%;
+			font-weight: 900;
+			text-decoration: none;
+			vertical-align: middle;
+			align-self: center;
+			line-height: 1.6em;
+			font-size: 1.3em;
+			margin-bottom: 0.3em;
+		}
+
+		.openInAppLink {
+			background: none;
+			border: none;
+			padding: 0.8em;
+			margin-top: 0.4em;
+			align-self: center;
+			font-family: 'SF Pro Display', 'Roboto', sans-serif;
+			font-size: 0.95em;
+			font-weight: 400;
+			color: rgba(255, 255, 255, 0.70);
+			text-decoration: underline;
+			cursor: pointer;
+		}
+
+		content {
+			flex-grow: 1;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-content: center;
+			align-items: center;
+			width: 100%;
+		}
+
+		footer {
+			flex-grow: 1;
+			width: 100%;
+			display: flex;
+			text-align: center;
+			flex-direction: column;
+			margin-bottom: 5em;
+			justify-content: flex-end;
+		}
+
+		#mainContainer {
+			display: flex;
+			flex-direction: column;
+			height: 100%;
+			width: 100%;
+		}
+
+		.topRightButton {
+			position: fixed;
+			top: 2%;
+			width: 15%;
+			max-width: 120px;
+			right: 3%;
+			color: transparent;
+			background: transparent;
+
+			background: none;
+			color: inherit;
+			border: none;
+			padding: 0;
+			font: inherit;
+			cursor: pointer;
+			outline: inherit;
+		}
+
+		.topRightButton img {
+			width: 100%;
+		}
+
+		#infoContainer {
+			 
+			display: flex;
+			justify-content: flex-start;
+			flex-direction: column;
+			position: fixed;
+			width: 92%;
+			height: 100%;
+			background-color: #1A1A1A;
+			font-family: system-ui, BlinkMacSystemFont, 'Roboto', sans-serif;
+			padding-right: 4%;
+			padding-left: 4%;
+			align-items: center;
+			overflow: scroll;
+			display: none;
+		}
+
+		#infoContainer h2 {
+			color: #00EE6E;
+			text-align: center;
+			font-family: SF Pro;
+			font-size: 0.8em;
+			font-style: normal;
+			font-weight: 700;
+			text-transform: uppercase;
+			font-family: 'Roboto', sans-serif;
+			padding: 0; margin: 0;
+			margin-top: 3em;
+		}
+
+		#infoContainer p {
+			color: var(--labels-primary, #FFF);
+			text-align: center;
+			font-family: 'SF Pro Display', 'Roboto', sans-serif;
+			font-style: normal;
+			font-weight: 400;
+			line-height: normal;
+		}
+
+		#infoContainer h1 {
+			margin-top: 0.3em;
+			font-size: 2.2em;
+			color: white;
+			font-weight: 600;
+			font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif 'Roboto', sans-serif;
+		}
+
+		.feature {
+			display: flex;
+			justify-content: flex-start;
+			flex-direction: column;
+			align-items: center;
+			width: 100%;
+			margin-bottom: 3em;
+		}
+
+		.feature img {
+			width: 100%;
+			object-fit: cover;
+		}
+
+		.feature p {
+			color: var(--labels-primary, #FFF);
+			text-align: center;
+			font-family: 'SF Pro Display';
+			font-size: 0.95em;
+			font-style: normal;
+			font-weight: 600;
+			line-height: normal;
+			padding-right: 10%;
+			padding-left: 10%;
+			margin-top: 1em;
+			margin-bottom: 1em;
+		}
+
+		@media (min-aspect-ratio: 1/1) {
+			
+			header {
+				margin-top: 3%;
+			}
+
+			#ticket {
+				width: 25%;
+			}
+
+			#mainContainer { 
+				max-width: 800px;
+			}
+
+			.feature {
+				max-width: 600px;
+			}
+		}
+
+		@media (max-aspect-ratio: 1/1) {
+
+			.downloadButton {
+				font-size: 1.1em;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div id="mainContainer">
+
+		<button id="infoButton" class="topRightButton closeButton">
+			<img src="/_assets/info.svg" alt="more info" />
+		</button>
+
+		<header>
+			<img id="ticket" src="https://www.cappcdn.com/assets/invitation_ticket.png" alt="invitation ticket" />
+			<h1>You were invited<br/>by @31q2zgx7zeapbvb2awel4fa5vx2e!</h1>
+			<h3>Discover their listening activity</h3>
+		</header>
+
+		<footer>
+			<button id="downloadLink" class="downloadButton"><img src="/_assets/appStore.png" alt="app store"/><p>Download on App Store</p></button>
+			<button id="downloadLinkPlayStore" class="downloadButton"><img src="/_assets/play_store_mini.png" alt="play store"/><p>Download on Play Store</p></button>
+			<button id="openInAppLink" class="openInAppLink">Already have Airbuds? Open it</button>
+		</footer>
+		</div>
+
+		<div id="infoContainer">
+			<button id="closeButton" class="topRightButton closeButton">
+				<img src="/_assets/close.svg" alt="close info" />
+			</button>
+
+			<h2>INTRODUCING AIRBUDS</h2>
+			<h1>Airbuds is a social app</h1>
+			<p>Connect with friends to explore their listening activity and react using emojis and custom stickers. <br><br/>It's like having a front-row seat to your friends' music journey through out their day.</p>
+			<p>Music is simply better when enjoyed together!</p>
+			
+			<div class="feature">
+				<img class="feature_image" src="/_assets/illustration_widget.png" alt="illustration profile" />
+				<p class="feature_description">See what your friends are listening to right from your home screen!</p>
+			</div>
+
+			<div class="feature">
+				<img class="feature_image" src="/_assets/illustration_react.png" alt="illustration profile" />
+				<p class="feature_description">React to you friends’ music</p>
+			</div>
+
+			<div class="feature">
+				<img class="feature_image" src="/_assets/illustration_tunetwins.png" alt="illustration profile" />
+				<p class="feature_description">See when your friends listen to the same song as you or repeat a song over and over again!</p>
+			</div>
+
+			<div class="feature">
+				<img class="feature_image" src="/_assets/illustration_profile.png" alt="illustration profile" />
+				<p class="feature_description">Get a music profile to share and compare your stats with friends!</p>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
