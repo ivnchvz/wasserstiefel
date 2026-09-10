@@ -9,6 +9,10 @@ export type Movie = {
   rewatch: boolean;
   url: string;
   poster: string | null;
+  /** Paragraphs of the member's review, or null when they only logged it. */
+  review: string[] | null;
+  /** The member flagged the review as containing spoilers. */
+  spoilers: boolean;
 };
 
 export type Game = {

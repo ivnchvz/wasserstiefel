@@ -14,6 +14,41 @@ function decodeEntities(input: string): string {
     .replace(/&amp;/g, "&"); // must run last, or it double-decodes
 }
 
+/**
+ * Letterboxd fills the description of a plain diary entry with this rather
+ * than leaving it empty, so it has to be told apart from an actual review.
+ */
+const AUTO_TEXT = /^Watched on \w+ \w+ \d+,? \d{4}\.?$/;
+
+function stripTags(html: string): string {
+  return html.replace(/<[^>]+>/g, "");
+}
+
+/**
+ * The description carries the poster in a leading paragraph and then the
+ * review body. Tags are stripped to plain paragraphs: it renders as
+ * typography here, and member HTML never reaches the page as markup.
+ */
+function parseReview(description: string): { review: string[] | null; spoilers: boolean } {
+  const raw = description.replace(/<!\[CDATA\[|\]\]>/g, "");
+  const body = raw.replace(/<p>\s*<img[^>]*>\s*<\/p>/, "");
+
+  const paragraphs = [...body.matchAll(/<p>([\s\S]*?)<\/p>/g)]
+    .map((m) => decodeEntities(stripTags(m[1])).replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  // Letterboxd prepends this line rather than marking it up; the flag is shown
+  // separately, so drop it from the text.
+  const spoilers = paragraphs[0]?.startsWith("This review may contain spoilers");
+  const text = spoilers ? paragraphs.slice(1) : paragraphs;
+
+  if (text.length === 0 || (text.length === 1 && AUTO_TEXT.test(text[0]))) {
+    return { review: null, spoilers: false };
+  }
+
+  return { review: text, spoilers: Boolean(spoilers) };
+}
+
 function tag(xml: string, name: string): string | null {
   // Tag names here include a namespace colon, which needs escaping in the class.
   const m = xml.match(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`));
@@ -38,6 +73,7 @@ export function parseLetterboxdFeed(xml: string, limit: number): Movie[] {
     const rating = rawRating === null ? null : Number.parseFloat(rawRating);
     const description = item.match(/<description>([\s\S]*?)<\/description>/)?.[1] ?? "";
     const poster = description.match(/<img src="([^"]+)"/)?.[1] ?? null;
+    const { review, spoilers } = parseReview(description);
 
     movies.push({
       title,
@@ -47,6 +83,8 @@ export function parseLetterboxdFeed(xml: string, limit: number): Movie[] {
       rewatch: tag(item, "letterboxd:rewatch") === "Yes",
       url: link,
       poster,
+      review,
+      spoilers,
     });
 
     if (movies.length >= limit) break;
@@ -78,4 +116,16 @@ export async function getRecentMovies(limit = 6): Promise<SectionResult<Movie>> 
   } catch (err) {
     return { status: "error", message: err instanceof Error ? err.message : "Letterboxd fetch failed" };
   }
+}
+
+/**
+ * Most diary entries carry no writing, so the feed is scanned in full and
+ * filtered rather than sliced. This shares the fetch above: same URL and
+ * options, so it's deduplicated within a render.
+ */
+export async function getRecentReviews(limit = 4): Promise<SectionResult<Movie>> {
+  const all = await getRecentMovies(Number.MAX_SAFE_INTEGER);
+  if (all.status !== "ok") return all;
+
+  return { status: "ok", items: all.items.filter((m) => m.review).slice(0, limit) };
 }

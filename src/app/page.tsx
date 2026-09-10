@@ -1,11 +1,11 @@
-import { getRecentMovies } from "@/lib/letterboxd";
+import { getRecentMovies, getRecentReviews } from "@/lib/letterboxd";
 import { getRecentGames } from "@/lib/games";
 import { getNowPlayingGame } from "@/lib/steam";
 import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
 import { getLastTrack } from "@/lib/music";
 import { HalftoneImage, AsciiImage } from "@/components/Halftone";
 import { Reveal } from "@/components/Reveal";
-import type { Favorite, SectionResult } from "@/lib/types";
+import type { Favorite, Movie, SectionResult } from "@/lib/types";
 
 export const revalidate = 60;
 
@@ -34,6 +34,73 @@ function Rating({ value }: { value: number | null }) {
         );
       })}
     </svg>
+  );
+}
+
+/** How many paragraphs show before deferring to Letterboxd. */
+const PARAGRAPH_CAP = 3;
+
+function ReviewBody({ paragraphs, url }: { paragraphs: string[]; url: string }) {
+  const shown = paragraphs.slice(0, PARAGRAPH_CAP);
+  return (
+    /* ch resolves against this element's own font-size, so the measure is set
+       here at text size rather than on an inheriting wrapper. */
+    <div className="max-w-[64ch] text-[12px]">
+      {shown.map((p, i) => (
+        <p key={i} className="mt-3 text-[12px] leading-[1.85] text-ink first:mt-0">
+          {p}
+        </p>
+      ))}
+      {paragraphs.length > shown.length && (
+        <a href={url} className="mt-3 inline-block text-[10px] tracking-[0.12em] text-ink-soft hover:text-ink hover:underline">
+          continue on letterboxd ↗
+        </a>
+      )}
+    </div>
+  );
+}
+
+function Review({ movie }: { movie: Movie }) {
+  const paragraphs = movie.review ?? [];
+  return (
+    <li className="border-t border-rule py-8 first:border-t-0 first:pt-0">
+      <div className="grid gap-6 sm:grid-cols-[86px_1fr]">
+        <div>
+          {movie.poster && (
+            <a href={movie.url} className="group block w-[86px] border border-rule bg-paper p-[3px] transition-colors hover:border-ink">
+              <Reveal src={movie.poster} alt={movie.title}>
+                <HalftoneImage src={movie.poster} cols={26} rows={36} label={movie.title} className="w-full text-ink" />
+              </Reveal>
+            </a>
+          )}
+        </div>
+        <div className="min-w-0">
+          <a href={movie.url} className="group inline-flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="text-[14px] font-medium tracking-[-0.01em] group-hover:underline">{movie.title}</span>
+            <span className="text-[10px] tabular-nums text-ink-soft">{movie.year}</span>
+            <Rating value={movie.rating} />
+            <span className="text-[10px] tabular-nums text-ink-soft">{when(movie.watchedAt)}</span>
+            {movie.rewatch && <span className="text-[10px] tracking-[0.12em] text-ink-soft">rewatch</span>}
+          </a>
+
+          <div className="mt-4">
+            {movie.spoilers ? (
+              /* Flagged by the member, so it stays shut until asked for. */
+              <details className="group/sp">
+                <summary className="cursor-pointer list-none text-[10px] tracking-[0.14em] text-ink-soft hover:text-ink">
+                  ▸ contains spoilers — reveal
+                </summary>
+                <div className="mt-4">
+                  <ReviewBody paragraphs={paragraphs} url={movie.url} />
+                </div>
+              </details>
+            ) : (
+              <ReviewBody paragraphs={paragraphs} url={movie.url} />
+            )}
+          </div>
+        </div>
+      </div>
+    </li>
   );
 }
 
@@ -102,8 +169,9 @@ function Section({
 }
 
 export default async function Home() {
-  const [movies, games, music, favFilms, favGames, nowGame] = await Promise.all([
+  const [movies, reviews, games, music, favFilms, favGames, nowGame] = await Promise.all([
     getRecentMovies(6),
+    getRecentReviews(4),
     getRecentGames(8),
     getLastTrack(),
     getFavoriteFilms(),
@@ -212,6 +280,24 @@ export default async function Home() {
 
         <Section
           index="03"
+          title="reviews"
+          href={lb ? `https://letterboxd.com/${lb}/films/reviews/` : undefined}
+          result={reviews}
+        >
+          {reviews.status === "ok" &&
+            (reviews.items.length === 0 ? (
+              <p className="text-[11px] text-ink-soft">nothing written yet</p>
+            ) : (
+              <ul>
+                {reviews.items.map((m) => (
+                  <Review key={m.url} movie={m} />
+                ))}
+              </ul>
+            ))}
+        </Section>
+
+        <Section
+          index="04"
           title="favorite films"
           href={lb ? `https://letterboxd.com/${lb}/` : undefined}
           result={favFilms}
@@ -220,7 +306,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="04"
+          index="05"
           title="recently played"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={games}
@@ -245,7 +331,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="05"
+          index="06"
           title="favorite games"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={favGames}
