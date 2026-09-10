@@ -67,3 +67,12 @@ export type NowPlayingGame = {
   url: string;
   cover: string;
 };
+
+/**
+ * Section 01's music, as polled: the tracks, plus the featured one's artwork
+ * already reduced to ASCII, since the browser has no image pipeline.
+ */
+export type NowListening = {
+  tracks: Track[];
+  ascii: string[] | null;
+};

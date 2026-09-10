@@ -4,10 +4,10 @@ import { getSeries } from "@/lib/series";
 import { getRatedAlbums } from "@/lib/albums";
 import { getNowPlayingGame } from "@/lib/steam";
 import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
-import { getRecentTracks } from "@/lib/music";
-import { HalftoneImage, AsciiImage } from "@/components/Halftone";
+import { getRecentTracks, withArtwork } from "@/lib/music";
+import { HalftoneImage } from "@/components/Halftone";
 import { Reveal } from "@/components/Reveal";
-import { LocalTime } from "@/components/LocalTime";
+import { NowListening } from "@/components/NowListening";
 import { NowPlayingBanner } from "@/components/NowPlayingBanner";
 import { halftone } from "@/lib/halftone";
 import type { NowPlayingPayload } from "./api/now-playing/route";
@@ -250,8 +250,8 @@ export default async function Home() {
   const lb = LETTERBOXD_USER;
   const bl = BACKLOGGD_USER;
   const fm = LASTFM_USER;
-  const track = music.status === "ok" ? music.items[0] : undefined;
-  const recentTracks = music.status === "ok" ? music.items.slice(1) : [];
+  // Built once here so the section is in the first paint; the component polls from there.
+  const initialListening = music.status === "ok" ? await withArtwork(music.items) : null;
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-16 sm:px-10 sm:py-24">
@@ -268,57 +268,14 @@ export default async function Home() {
 
       <div className="flex flex-col gap-20">
         <Section index="01" title="now" href={fm ? `https://www.last.fm/user/${fm}` : undefined}>
-          <div className="flex flex-col gap-10">
-            {track && (
-              <a href={track.url ?? "#"} className="group flex items-start gap-7">
-                {track.artwork && (
-                  <AsciiImage src={track.artwork} cols={26} rows={26} label={`${track.title} cover`} className="shrink-0 text-[6px] text-ink" />
-                )}
-                <span className="min-w-0">
-                  <span className="block text-[10px] tracking-[0.18em] text-ink-soft">music</span>
-                  <span className="mt-1 block text-lg font-medium tracking-[-0.02em] group-hover:underline">
-                    {track.title}
-                  </span>
-                  <span className="mt-1 block text-[12px] text-ink-soft">{track.artist}</span>
-                  <span className="mt-3 block text-[10px] tracking-[0.14em] text-ink-soft">
-                    {track.nowPlaying ? "▪ playing now" : track.playedAt ? <LocalTime iso={track.playedAt} /> : "recently"}
-                  </span>
-                </span>
-              </a>
-            )}
-
-            {recentTracks.length > 0 && (
-              <div>
-                <h3 className="mb-2 text-[10px] tracking-[0.18em] text-ink-soft">before that</h3>
-                <ol>
-                  {recentTracks.map((t, i) => (
-                    <li key={`${t.playedAt ?? i}-${t.title}`} className="border-b border-rule first:border-t">
-                      <a
-                        href={t.url ?? "#"}
-                        className="group grid grid-cols-[1fr_auto] items-baseline gap-4 py-2.5"
-                      >
-                        <span className="min-w-0 truncate text-[12px] tracking-[-0.01em]">
-                          <span className="group-hover:underline">{t.title}</span>
-                          <span className="text-ink-soft"> — {t.artist}</span>
-                        </span>
-                        <span className="text-right text-[10px] tabular-nums text-ink-soft">
-                          {t.playedAt ? <LocalTime iso={t.playedAt} /> : "—"}
-                        </span>
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-
-            {!track && (
-              <p className="text-[11px] text-ink-soft">
-                {music.status === "unconfigured"
-                  ? `not configured — ${music.message}`
-                  : "nothing scrobbled yet"}
-              </p>
-            )}
-          </div>
+          {music.status === "ok" && initialListening ? (
+            <NowListening initial={initialListening} />
+          ) : (
+            <p className="text-[11px] text-ink-soft">
+              {music.status === "unconfigured" ? "not configured" : "unavailable"}
+              {music.status !== "ok" && ` — ${music.message}`}
+            </p>
+          )}
         </Section>
 
 

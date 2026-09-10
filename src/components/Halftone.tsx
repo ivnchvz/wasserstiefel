@@ -1,4 +1,4 @@
-import { halftone, toAscii } from "@/lib/halftone";
+import { halftone } from "@/lib/halftone";
 
 /** Below this the cell is paper; skipping it keeps the SVG light. */
 const INK_FLOOR = 0.07;
@@ -60,37 +60,5 @@ export async function HalftoneImage({
     >
       <g fill="currentColor">{squares}</g>
     </svg>
-  );
-}
-
-/**
- * The same grid rendered as characters instead of squares - the other half of
- * the reference language, where the picture is literally made of type.
- */
-export async function AsciiImage({
-  src,
-  cols = 22,
-  rows = 22,
-  className,
-  label,
-}: {
-  src: string;
-  cols?: number;
-  rows?: number;
-  className?: string;
-  label?: string;
-}) {
-  const grid = await halftone(src, cols, rows);
-  if (!grid) return null;
-
-  return (
-    <pre
-      className={className}
-      role="img"
-      aria-label={label ?? "ascii image"}
-      style={{ lineHeight: 0.82, letterSpacing: "-0.04em" }}
-    >
-      {toAscii(grid).join("\n")}
-    </pre>
   );
 }

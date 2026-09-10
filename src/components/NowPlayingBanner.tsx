@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { NowPlayingPayload } from "@/app/api/now-playing/route";
+import { usePoll } from "./usePoll";
 
-const POLL_MS = 25_000;
 const INK_FLOOR = 0.07;
 const r = (n: number) => Math.round(n * 100) / 100;
 
@@ -37,40 +36,7 @@ function Grid({ data }: { data: NonNullable<NowPlayingPayload> }) {
  * first paint, rather than popping in after hydration.
  */
 export function NowPlayingBanner({ initial }: { initial: NowPlayingPayload }) {
-  const [game, setGame] = useState<NowPlayingPayload>(initial);
-
-  useEffect(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout>;
-
-    const poll = async () => {
-      try {
-        const res = await fetch("/api/now-playing", { cache: "no-store" });
-        if (!cancelled && res.ok) setGame((await res.json()) as NowPlayingPayload);
-      } catch {
-        // A failed poll is not worth surfacing; the next one will do.
-      }
-      if (!cancelled) timer = setTimeout(poll, POLL_MS);
-    };
-
-    // Nothing changes while the tab is in the background, and polling there
-    // wakes the radio for no benefit. Check once on return instead.
-    const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        clearTimeout(timer);
-        void poll();
-      }
-    };
-
-    timer = setTimeout(poll, POLL_MS);
-    document.addEventListener("visibilitychange", onVisible);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, []);
+  const game = usePoll<NowPlayingPayload>("/api/now-playing", initial);
 
   if (!game) return null;
 

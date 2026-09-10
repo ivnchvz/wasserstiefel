@@ -1,4 +1,5 @@
-import type { SectionResult, Track } from "./types";
+import type { NowListening, SectionResult, Track } from "./types";
+import { halftone, toAscii } from "./halftone";
 import { LASTFM_USER } from "./config";
 
 const NOW_PLAYING_TTL_SECONDS = 60; // this one should feel live
@@ -68,7 +69,10 @@ function samePlay(current: Track, earlier: Track): boolean {
  * (NepTunes, QuietScrob, Cider) and reading Last.fm's open API is the durable
  * way to surface listening on a static site.
  */
-export async function getRecentTracks(count = 5): Promise<SectionResult<Track>> {
+export async function getRecentTracks(
+  count = 5,
+  { ttl = NOW_PLAYING_TTL_SECONDS }: { ttl?: number } = {},
+): Promise<SectionResult<Track>> {
   const user = LASTFM_USER;
   const key = process.env.LASTFM_API_KEY;
   // Only the key is missing when unset; the username is baked in.
@@ -85,7 +89,7 @@ export async function getRecentTracks(count = 5): Promise<SectionResult<Track>> 
   url.searchParams.set("limit", String(count + 2));
 
   try {
-    const res = await fetch(url, { next: { revalidate: NOW_PLAYING_TTL_SECONDS } });
+    const res = await fetch(url, { next: { revalidate: ttl } });
     const body = await res.json();
 
     if (!res.ok || body?.error) {
@@ -104,4 +108,13 @@ export async function getRecentTracks(count = 5): Promise<SectionResult<Track>> 
   } catch (err) {
     return { status: "error", message: err instanceof Error ? err.message : "Last.fm fetch failed" };
   }
+}
+
+/** Pairs the tracks with the featured one's artwork, as ASCII. */
+export async function withArtwork(tracks: Track[]): Promise<NowListening> {
+  const art = tracks[0]?.artwork;
+  // The artwork fetch inside halftone() is cached for a week, so polling
+  // redraws from a stored image rather than downloading it again.
+  const grid = art ? await halftone(art, 26, 26) : null;
+  return { tracks, ascii: grid ? toAscii(grid) : null };
 }

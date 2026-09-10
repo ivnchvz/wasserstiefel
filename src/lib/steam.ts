@@ -82,7 +82,7 @@ export async function getSteamGames(limit: number): Promise<Game[] | null> {
  * actually running, so its presence *is* the "playing now" signal. Returns
  * null whenever nothing is running, or Steam isn't configured.
  */
-export async function getNowPlayingGame(): Promise<NowPlayingGame | null> {
+export async function getNowPlayingGame({ ttl = 45 }: { ttl?: number } = {}): Promise<NowPlayingGame | null> {
   const key = process.env.STEAM_API_KEY;
   const account = STEAM_ACCOUNT;
   if (!key) return null;
@@ -96,7 +96,7 @@ export async function getNowPlayingGame(): Promise<NowPlayingGame | null> {
     url.searchParams.set("steamids", steamId);
 
     // Presence is the one genuinely live thing here; keep it short.
-    const res = await fetch(url, { next: { revalidate: 45 } });
+    const res = await fetch(url, { next: { revalidate: ttl } });
     if (!res.ok) return null;
 
     const player = (await res.json())?.response?.players?.[0];
