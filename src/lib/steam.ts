@@ -1,4 +1,5 @@
 import type { Game, NowPlayingGame } from "./types";
+import { STEAM_ACCOUNT } from "./config";
 
 const STEAM_TTL_SECONDS = 60 * 30;
 
@@ -52,8 +53,8 @@ export function mapOwnedGames(games: OwnedGame[], limit: number): Game[] {
  */
 export async function getSteamGames(limit: number): Promise<Game[] | null> {
   const key = process.env.STEAM_API_KEY;
-  const account = process.env.STEAM_ID;
-  if (!key || !account) return null;
+  const account = STEAM_ACCOUNT;
+  if (!key) return null;
 
   const steamId = await resolveSteamId(account, key);
   if (!steamId) throw new Error(`Could not resolve Steam account "${account}"`);
@@ -83,8 +84,8 @@ export async function getSteamGames(limit: number): Promise<Game[] | null> {
  */
 export async function getNowPlayingGame(): Promise<NowPlayingGame | null> {
   const key = process.env.STEAM_API_KEY;
-  const account = process.env.STEAM_ID;
-  if (!key || !account) return null;
+  const account = STEAM_ACCOUNT;
+  if (!key) return null;
 
   try {
     const steamId = await resolveSteamId(account, key);

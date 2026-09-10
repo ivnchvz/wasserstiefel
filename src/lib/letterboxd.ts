@@ -1,4 +1,5 @@
 import type { Movie, SectionResult } from "./types";
+import { LETTERBOXD_USER } from "./config";
 
 const FEED_TTL_SECONDS = 60 * 60; // Letterboxd diary updates are not urgent.
 
@@ -94,10 +95,7 @@ export function parseLetterboxdFeed(xml: string, limit: number): Movie[] {
 }
 
 export async function getRecentMovies(limit = 6): Promise<SectionResult<Movie>> {
-  const username = process.env.LETTERBOXD_USERNAME;
-  if (!username) {
-    return { status: "unconfigured", message: "LETTERBOXD_USERNAME is not set" };
-  }
+  const username = LETTERBOXD_USER;
 
   try {
     const res = await fetch(`https://letterboxd.com/${encodeURIComponent(username)}/rss/`, {

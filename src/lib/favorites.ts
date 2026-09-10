@@ -1,4 +1,5 @@
 import type { Favorite, SectionResult } from "./types";
+import { BACKLOGGD_USER, LETTERBOXD_USER } from "./config";
 
 const FAVOURITES_TTL_SECONDS = 60 * 60 * 24; // favourites change rarely
 
@@ -31,8 +32,7 @@ function decode(s: string): string {
  * real 2:3 artwork comes from each film page's JSON-LD `image`.
  */
 export async function getFavoriteFilms(): Promise<SectionResult<Favorite>> {
-  const user = process.env.LETTERBOXD_USERNAME;
-  if (!user) return { status: "unconfigured", message: "LETTERBOXD_USERNAME is not set" };
+  const user = LETTERBOXD_USER;
 
   try {
     const html = await getText(`https://letterboxd.com/${encodeURIComponent(user)}/`);
@@ -79,8 +79,7 @@ export async function getFavoriteFilms(): Promise<SectionResult<Favorite>> {
  * this degrades to an empty section.
  */
 export async function getFavoriteGames(): Promise<SectionResult<Favorite>> {
-  const user = process.env.BACKLOGGD_USERNAME;
-  if (!user) return { status: "unconfigured", message: "BACKLOGGD_USERNAME is not set" };
+  const user = BACKLOGGD_USER;
 
   try {
     const html = await getText(`https://backloggd.com/u/${encodeURIComponent(user)}/`);

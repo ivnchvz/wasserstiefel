@@ -11,6 +11,7 @@ import { NowPlayingBanner } from "@/components/NowPlayingBanner";
 import { halftone } from "@/lib/halftone";
 import type { NowPlayingPayload } from "./api/now-playing/route";
 import type { Favorite, Movie, SectionResult } from "@/lib/types";
+import { BACKLOGGD_USER, LASTFM_USER, LETTERBOXD_USER } from "@/lib/config";
 
 export const revalidate = 60;
 
@@ -245,9 +246,9 @@ export default async function Home() {
     };
   }
 
-  const lb = process.env.LETTERBOXD_USERNAME;
-  const bl = process.env.BACKLOGGD_USERNAME;
-  const fm = process.env.LASTFM_USERNAME;
+  const lb = LETTERBOXD_USER;
+  const bl = BACKLOGGD_USER;
+  const fm = LASTFM_USER;
   const track = music.status === "ok" ? music.items[0] : undefined;
 
   return (

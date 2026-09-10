@@ -1,4 +1,5 @@
 import type { SectionResult, Track } from "./types";
+import { LASTFM_USER } from "./config";
 
 const NOW_PLAYING_TTL_SECONDS = 60; // this one should feel live
 
@@ -47,10 +48,11 @@ export function parseLastfmTrack(raw: LastfmTrack): Track | null {
  * open API is the durable way to surface a last-played track on a static site.
  */
 export async function getLastTrack(): Promise<SectionResult<Track>> {
-  const user = process.env.LASTFM_USERNAME;
+  const user = LASTFM_USER;
   const key = process.env.LASTFM_API_KEY;
-  if (!user || !key) {
-    return { status: "unconfigured", message: "LASTFM_USERNAME and LASTFM_API_KEY are not set" };
+  // Only the key is missing when unset; the username is baked in.
+  if (!key) {
+    return { status: "unconfigured", message: "LASTFM_API_KEY is not set" };
   }
 
   const url = new URL("https://ws.audioscrobbler.com/2.0/");
