@@ -60,24 +60,51 @@ function ReviewBody({ paragraphs, url }: { paragraphs: string[]; url: string }) 
   );
 }
 
-function Review({ movie }: { movie: Movie }) {
+/**
+ * The collapsible review used inside the film list on narrow screens. The
+ * films list and the reviews section both render one, so ids are namespaced
+ * per section - duplicate ids would point every label at the first checkbox.
+ */
+function ReviewDisclosure({ movie, idPrefix }: { movie: Movie; idPrefix: string }) {
+  const id = `${idPrefix}-${movie.url.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "")}`;
   const paragraphs = movie.review ?? [];
-  // Stable per-review id so the checkbox and its labels pair up.
-  const id = `rev-${movie.url.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "")}`;
 
   return (
-    <li className="group border-t border-rule py-8 first:border-t-0 first:pt-0">
-      {/*
-       * Reviews run long, and on a phone they push everything below them off
-       * the screen. Narrow viewports collapse each one behind a tap; wide ones
-       * ignore the checkbox entirely and always show the text. Done with a
-       * checkbox rather than state so the server renders it collapsed and
-       * there's no expanded flash before hydration.
-       */}
+    <>
       <input type="checkbox" id={id} className="sr-only" aria-label={`Read the review of ${movie.title}`} />
+      <label
+        htmlFor={id}
+        className="mt-2 inline-block cursor-pointer text-[10px] tracking-[0.14em] text-ink-soft hover:text-ink"
+      >
+        <span className="group-has-[:checked]:hidden">▸ read review</span>
+        <span className="hidden group-has-[:checked]:inline">▾ hide review</span>
+      </label>
+      <div className="mt-3 hidden group-has-[:checked]:block">
+        {movie.spoilers ? (
+          <details>
+            <summary className="cursor-pointer list-none text-[10px] tracking-[0.14em] text-ink-soft hover:text-ink">
+              ▸ contains spoilers — reveal
+            </summary>
+            <div className="mt-3">
+              <ReviewBody paragraphs={paragraphs} url={movie.url} />
+            </div>
+          </details>
+        ) : (
+          <ReviewBody paragraphs={paragraphs} url={movie.url} />
+        )}
+      </div>
+    </>
+  );
+}
 
+/** The standalone reviews section only renders from sm, so it never folds. */
+function Review({ movie }: { movie: Movie }) {
+  const paragraphs = movie.review ?? [];
+
+  return (
+    <li className="border-t border-rule py-8 first:border-t-0 first:pt-0">
       <div className="grid gap-6 sm:grid-cols-[86px_1fr]">
-        <div className="relative w-[86px]">
+        <div className="w-[86px]">
           {movie.poster && (
             <a href={movie.url} className="block border border-rule bg-paper p-[3px] transition-colors hover:border-ink">
               <Reveal src={movie.poster} alt={movie.title}>
@@ -85,9 +112,6 @@ function Review({ movie }: { movie: Movie }) {
               </Reveal>
             </a>
           )}
-          {/* On a phone the poster opens the review instead of leaving the
-              page; the label sits over it and is dropped at sm. */}
-          <label htmlFor={id} className="absolute inset-0 z-10 cursor-pointer sm:hidden" aria-hidden="true" />
         </div>
 
         <div className="min-w-0">
@@ -99,15 +123,7 @@ function Review({ movie }: { movie: Movie }) {
             {movie.rewatch && <span className="text-[10px] tracking-[0.12em] text-ink-soft">rewatch</span>}
           </a>
 
-          <label
-            htmlFor={id}
-            className="mt-3 inline-block cursor-pointer text-[10px] tracking-[0.14em] text-ink-soft hover:text-ink sm:hidden"
-          >
-            <span className="group-has-[:checked]:hidden">▸ read review</span>
-            <span className="hidden group-has-[:checked]:inline">▾ hide review</span>
-          </label>
-
-          <div className="mt-4 hidden group-has-[:checked]:block sm:block">
+          <div className="mt-4">
             {movie.spoilers ? (
               /* Flagged by the member, so it stays shut until asked for. */
               <details>
@@ -159,16 +175,18 @@ function Section({
   title,
   href,
   result,
+  className,
   children,
 }: {
   index: string;
   title: string;
   href?: string;
   result?: SectionResult<unknown>;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-t border-rule pt-4">
+    <section className={`border-t border-rule pt-4 ${className ?? ""}`}>
       <div className="mb-8 flex items-baseline gap-4">
         <span className="text-[10px] tabular-nums text-ink-soft">{index}</span>
         <h2 className="text-[11px] lowercase tracking-[0.28em] text-ink">{title}</h2>
@@ -273,12 +291,22 @@ export default async function Home() {
           href={lb ? `https://letterboxd.com/${lb}/films/diary/` : undefined}
           result={movies}
         >
-          <ul className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-6">
+          {/*
+           * One layout, two shapes. Narrow screens read as a list - poster
+           * beside its details, with the review folded in - so the films and
+           * their writing are one thing rather than two sections saying the
+           * same names twice. From sm it becomes the poster grid and the
+           * reviews get their own section below.
+           */}
+          <ul className="grid grid-cols-1 gap-y-9 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-6">
             {movies.status === "ok" &&
               movies.items.map((m) => (
-                <li key={m.url}>
-                  <a href={m.url} className="group block">
-                    <span className="block border border-rule bg-paper p-[3px] transition-colors group-hover:border-ink">
+                <li key={m.url} className="group flex gap-5 sm:block">
+                  <div className="relative w-[86px] shrink-0 sm:w-auto">
+                    <a
+                      href={m.url}
+                      className="block border border-rule bg-paper p-[3px] transition-colors hover:border-ink"
+                    >
                       {m.poster ? (
                         <Reveal src={m.poster} alt={m.title}>
                           <HalftoneImage src={m.poster} cols={30} rows={42} label={m.title} className="w-full text-ink" />
@@ -288,15 +316,32 @@ export default async function Home() {
                           {m.title}
                         </span>
                       )}
-                    </span>
-                    <span className="mt-3 block text-[11px] leading-snug tracking-[-0.01em] group-hover:underline">
+                    </a>
+                    {m.review && (
+                      /* On a phone the poster opens the writing rather than
+                         leaving the page; dropped entirely from sm. */
+                      <label
+                        htmlFor={`m-${m.url.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "")}`}
+                        className="absolute inset-0 z-10 cursor-pointer sm:hidden"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1 sm:mt-3">
+                    <a href={m.url} className="block text-[11px] leading-snug tracking-[-0.01em] hover:underline">
                       {m.title}
-                    </span>
+                    </a>
                     <span className="mt-1 flex items-center gap-2">
                       <span className="text-[10px] tabular-nums text-ink-soft">{m.year ?? "—"}</span>
                       <Rating value={m.rating} />
                     </span>
-                  </a>
+                    {m.review && (
+                      <div className="sm:hidden">
+                        <ReviewDisclosure movie={m} idPrefix="m" />
+                      </div>
+                    )}
+                  </div>
                 </li>
               ))}
           </ul>
@@ -305,6 +350,7 @@ export default async function Home() {
         <Section
           index="03"
           title="reviews"
+          className="hidden sm:block"
           href={lb ? `https://letterboxd.com/${lb}/films/reviews/` : undefined}
           result={reviews}
         >
