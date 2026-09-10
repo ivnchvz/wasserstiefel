@@ -52,6 +52,7 @@ export function Reveal({
   const [centred, setCentred] = useState(false);
   const [loadIt, setLoadIt] = useState(false);
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
   const canHover = useMediaQuery("(hover: hover)", true);
   const instant = useMediaQuery("(prefers-reduced-motion: reduce)", false);
 
@@ -103,9 +104,13 @@ export function Reveal({
       );
     };
 
-    // decode() settles when the bitmap can be painted; on failure show it
-    // anyway rather than leaving the reveal permanently stuck.
-    void (img.decode ? img.decode().then(arm, arm) : Promise.resolve().then(arm));
+    // decode() settles when the bitmap can be painted. If it can't - a game
+    // without library art, say - the halftone simply stays, which is a better
+    // outcome than revealing a broken graphic.
+    const fail = () => {
+      if (!cancelled) setFailed(true);
+    };
+    void (img.decode ? img.decode().then(arm, fail) : Promise.resolve().then(arm));
 
     return () => {
       cancelled = true;
@@ -163,7 +168,7 @@ export function Reveal({
       >
         {children}
       </span>
-      {loadIt && (
+      {loadIt && !failed && (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
           ref={imgRef}

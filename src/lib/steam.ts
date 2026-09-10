@@ -35,7 +35,9 @@ export function mapOwnedGames(games: OwnedGame[], limit: number): Game[] {
       rating: null, // Steam exposes playtime, not a personal score
       playedAt: new Date(g.rtime_last_played! * 1000).toISOString().slice(0, 10),
       url: `https://store.steampowered.com/app/${g.appid}/`,
-      cover: `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/header.jpg`,
+      // Portrait library art rather than the landscape header, so games sit
+      // in the same 2:3 grid as the film posters and the Backloggd covers.
+      cover: `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`,
     }));
 }
 
