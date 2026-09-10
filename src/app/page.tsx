@@ -1,6 +1,7 @@
 import { getRecentMovies, getRecentReviews } from "@/lib/letterboxd";
 import { getRecentGames, getFinishedGames } from "@/lib/games";
 import { getSeries } from "@/lib/series";
+import { getRatedAlbums } from "@/lib/albums";
 import { getNowPlayingGame } from "@/lib/steam";
 import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
 import { getLastTrack } from "@/lib/music";
@@ -212,7 +213,7 @@ function Section({
 }
 
 export default async function Home() {
-  const [movies, reviews, games, finished, watching, seenSeries, music, favFilms, favGames, nowGame] =
+  const [movies, reviews, games, finished, watching, seenSeries, albums, music, favFilms, favGames, nowGame] =
     await Promise.all([
       getRecentMovies(6),
       getRecentReviews(4),
@@ -220,6 +221,7 @@ export default async function Home() {
       getFinishedGames(12),
       getSeries("watching", 12),
       getSeries("completed", 12),
+      getRatedAlbums(12),
       getLastTrack(),
       getFavoriteFilms(),
       getFavoriteGames(),
@@ -308,8 +310,40 @@ export default async function Home() {
           </div>
         </Section>
 
+
         <Section
           index="02"
+          title="albums"
+          result={albums}
+        >
+          <ul className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 lg:grid-cols-6">
+            {albums.status === "ok" &&
+              albums.items.map((a) => (
+                <li key={`${a.artist}-${a.title}`}>
+                  <span className="block border border-rule bg-paper p-[3px]">
+                    {a.cover ? (
+                      <Reveal src={a.cover} alt={`${a.artist} — ${a.title}`}>
+                        <HalftoneImage src={a.cover} cols={34} rows={34} label={a.title} className="w-full text-ink" />
+                      </Reveal>
+                    ) : (
+                      <span className="flex aspect-square items-center justify-center p-2 text-center text-[9px] text-ink-soft">
+                        {a.title}
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-3 block text-[11px] leading-snug">{a.title}</span>
+                  <span className="mt-0.5 block truncate text-[10px] text-ink-soft">{a.artist}</span>
+                  <span className="mt-1 flex items-center gap-2">
+                    {a.year && <span className="text-[10px] tabular-nums text-ink-soft">{a.year}</span>}
+                    <Rating value={a.rating} />
+                  </span>
+                </li>
+              ))}
+          </ul>
+        </Section>
+
+        <Section
+          index="03"
           title="recently watched"
           href={lb ? `https://letterboxd.com/${lb}/films/diary/` : undefined}
           result={movies}
@@ -371,7 +405,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="03"
+          index="04"
           title="reviews"
           className="hidden sm:block"
           href={lb ? `https://letterboxd.com/${lb}/films/reviews/` : undefined}
@@ -390,7 +424,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="04"
+          index="05"
           title="favorite films"
           href={lb ? `https://letterboxd.com/${lb}/` : undefined}
           result={favFilms}
@@ -399,7 +433,7 @@ export default async function Home() {
         </Section>
 
 
-        <Section index="05" title="series">
+        <Section index="06" title="series">
           <div className="flex flex-wrap items-center gap-x-7">
             <input type="radio" name="series-tab" id="series-watching" defaultChecked className="peer/watching sr-only" />
             <input type="radio" name="series-tab" id="series-seen" className="peer/seen sr-only" />
@@ -478,7 +512,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="06"
+          index="07"
           title="played"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={games}
@@ -602,7 +636,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="07"
+          index="08"
           title="favorite games"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={favGames}

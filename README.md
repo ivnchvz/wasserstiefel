@@ -116,6 +116,23 @@ artwork are looked up and cached for a week:
 Statuses are `watching`, `completed`, `dropped` and `paused`; the section shows
 the first two under its tabs.
 
+## Albums
+
+RateYourMusic can't be read automatically: its robots.txt opens by prohibiting
+"any kind of automated means (e.g. crawling, scraping, etc) of access to the
+service without express permission", and profiles sit behind a Cloudflare
+challenge — `/~user` answers 403.
+
+RYM does, however, let members export their own ratings. Download yours from
+**rateyourmusic.com/user_albums_export/** and save it as
+`src/data/rym-ratings.csv`; the section reads it directly, no reformatting.
+
+Columns are matched by header name rather than position, so export changes are
+survivable, and RYM's 1-10 half-star scale is halved to match the star ratings
+used elsewhere. Unrated rows (`0`) are skipped. Cover art is looked up from the
+iTunes Search API, which needs no key — a few releases aren't in its index, and
+those fall back to a titled placeholder.
+
 ## /admin
 
 A local page for logging games and series without editing JSON by hand. Search runs
