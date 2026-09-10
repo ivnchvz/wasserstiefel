@@ -96,7 +96,7 @@ export function parseLetterboxdFeed(xml: string, limit: number): Movie[] {
 export async function getRecentMovies(limit = 6): Promise<SectionResult<Movie>> {
   const username = process.env.LETTERBOXD_USERNAME;
   if (!username) {
-    return { status: "unconfigured", message: "Set LETTERBOXD_USERNAME in .env.local" };
+    return { status: "unconfigured", message: "LETTERBOXD_USERNAME is not set" };
   }
 
   try {

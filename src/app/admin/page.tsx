@@ -45,6 +45,20 @@ export default function AdminPage() {
         </Link>
       </header>
 
+      {process.env.NODE_ENV === "production" && (
+        /*
+         * Admin writes a file in the repo. A serverless filesystem is
+         * read-only and thrown away between invocations, so edits made here
+         * would appear to work and then vanish - worth saying plainly rather
+         * than letting someone log a month of games into nothing.
+         */
+        <p className="mb-10 border border-ink px-4 py-3 text-[11px] leading-relaxed text-ink">
+          running in production — edits made here write to a file that this
+          deployment cannot keep. log locally with <span className="tracking-[0.1em]">npm run dev</span> and
+          commit the result, until writes move to the GitHub API or a database.
+        </p>
+      )}
+
       <div className="flex flex-col gap-20">
         <AdminLibrary config={GAMES} />
         <AdminLibrary config={SERIES} />

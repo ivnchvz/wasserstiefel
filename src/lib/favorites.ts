@@ -32,7 +32,7 @@ function decode(s: string): string {
  */
 export async function getFavoriteFilms(): Promise<SectionResult<Favorite>> {
   const user = process.env.LETTERBOXD_USERNAME;
-  if (!user) return { status: "unconfigured", message: "Set LETTERBOXD_USERNAME in .env.local" };
+  if (!user) return { status: "unconfigured", message: "LETTERBOXD_USERNAME is not set" };
 
   try {
     const html = await getText(`https://letterboxd.com/${encodeURIComponent(user)}/`);
@@ -80,7 +80,7 @@ export async function getFavoriteFilms(): Promise<SectionResult<Favorite>> {
  */
 export async function getFavoriteGames(): Promise<SectionResult<Favorite>> {
   const user = process.env.BACKLOGGD_USERNAME;
-  if (!user) return { status: "unconfigured", message: "Set BACKLOGGD_USERNAME in .env.local" };
+  if (!user) return { status: "unconfigured", message: "BACKLOGGD_USERNAME is not set" };
 
   try {
     const html = await getText(`https://backloggd.com/u/${encodeURIComponent(user)}/`);

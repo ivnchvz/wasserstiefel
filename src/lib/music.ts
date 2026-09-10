@@ -50,7 +50,7 @@ export async function getLastTrack(): Promise<SectionResult<Track>> {
   const user = process.env.LASTFM_USERNAME;
   const key = process.env.LASTFM_API_KEY;
   if (!user || !key) {
-    return { status: "unconfigured", message: "Set LASTFM_USERNAME and LASTFM_API_KEY in .env.local" };
+    return { status: "unconfigured", message: "LASTFM_USERNAME and LASTFM_API_KEY are not set" };
   }
 
   const url = new URL("https://ws.audioscrobbler.com/2.0/");
