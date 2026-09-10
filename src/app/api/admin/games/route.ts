@@ -3,10 +3,10 @@ import { GAMES_FILE } from "@/lib/games";
 
 const STATUSES = ["completed", "playing", "retired", "shelved"];
 
-const store = createStore(
-  GAMES_FILE,
-  (e) => String(e.slug ?? e.title ?? "").toLowerCase(),
-  (body) => {
+const store = createStore(GAMES_FILE, {
+  label: "games",
+  keyOf: (e) => String(e.slug ?? e.title ?? "").toLowerCase(),
+  sanitise: (body) => {
     const slug = typeof body.slug === "string" ? body.slug.trim() : "";
     const title = typeof body.title === "string" ? body.title.trim() : "";
     if (!slug && !title) return null;
@@ -20,6 +20,6 @@ const store = createStore(
       ...(body.platform ? { platform: body.platform } : {}),
     } as StoreEntry;
   },
-);
+});
 
 export const { GET, POST, DELETE } = store;

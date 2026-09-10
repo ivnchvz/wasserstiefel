@@ -1,25 +1,26 @@
 import { NextResponse } from "next/server";
+import { sessionFromCookieHeader, verifySession } from "./adminSession";
+
+/** Admin is open without a login only when running locally. */
+export const adminNeedsLogin = () => process.env.NODE_ENV === "production";
 
 /**
- * The admin routes write to the repo, so they must never be openly reachable.
- * In development they're allowed; anywhere else they require ADMIN_PASSWORD to
- * be set and sent, and refuse outright if no password is configured. Returns a
- * response when the request should be rejected, null when it may proceed.
+ * The admin routes write to the repository, so on the live site they need a
+ * signed-in session: the cookie set by /api/admin/login. With no
+ * ADMIN_PASSWORD configured, admin stays shut rather than open. Returns a
+ * response when the request must be refused, null when it may proceed.
+ *
+ * (An earlier version accepted the password as a header or query parameter.
+ * Nothing sent it, and a password in a URL ends up in logs, so it's gone.)
  */
 export function adminGate(request: Request): NextResponse | null {
-  if (process.env.NODE_ENV !== "production") return null;
+  if (!adminNeedsLogin()) return null;
 
-  const expected = process.env.ADMIN_PASSWORD;
-  if (!expected) {
+  if (!process.env.ADMIN_PASSWORD) {
     return NextResponse.json({ error: "admin is disabled: set ADMIN_PASSWORD" }, { status: 403 });
   }
-
-  const supplied =
-    request.headers.get("x-admin-password") ??
-    new URL(request.url).searchParams.get("password");
-
-  if (supplied !== expected) {
-    return NextResponse.json({ error: "unauthorised" }, { status: 401 });
+  if (!verifySession(sessionFromCookieHeader(request.headers.get("cookie")))) {
+    return NextResponse.json({ error: "signed out — log in again at /admin/login" }, { status: 401 });
   }
   return null;
 }

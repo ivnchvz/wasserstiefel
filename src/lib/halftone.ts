@@ -21,16 +21,17 @@ export type Halftone = {
  * so the same grid can drive squares, characters or anything else.
  */
 /**
- * Site-relative sources ("/gallery/x.jpg") are uploads sitting in public/,
- * which the server can't fetch from itself before it is listening - so they
- * are read from disk. Anything else is fetched and cached like artwork.
+ * Site-relative sources ("/gallery/x.jpg") are uploads sitting in
+ * public/gallery, which the server can't fetch from itself before it is
+ * listening - so they are read from disk. Anything else is fetched and cached
+ * like artwork.
  */
 async function load(src: string): Promise<Buffer | null> {
   if (src.startsWith("/")) {
-    const file = path.join(process.cwd(), "public", path.normalize(src).replace(/^([/\\])+/, ""));
-    // normalize() above plus this check keep a crafted path inside public/.
-    if (!file.startsWith(path.join(process.cwd(), "public") + path.sep)) return null;
-    return readFile(file).catch(() => null);
+    // Only gallery uploads are local. The fixed folder keeps a crafted path
+    // from reaching anything else, and keeps the bundler's trace to it.
+    if (!src.startsWith("/gallery/")) return null;
+    return readFile(path.join(process.cwd(), "public", "gallery", path.basename(src))).catch(() => null);
   }
 
   const res = await fetch(src, {

@@ -1,38 +1,10 @@
-import { createHash } from "node:crypto";
-import { unlink } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { adminGate } from "@/lib/adminGate";
-import { createStore, type StoreEntry } from "@/lib/adminStore";
-import { GALLERY_IMAGES_FILE, GALLERY_UPLOAD_DIR } from "@/lib/gallery";
+import { cannotSave, failure, type StoreEntry } from "@/lib/adminStore";
+import { imageEntry, imagesStore } from "@/lib/galleryStore";
 
-const UPLOADED = /^\/gallery\/[a-f0-9]{16}\.jpg$/;
-const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
-
-const store = createStore(
-  GALLERY_IMAGES_FILE,
-  (e) => String(e.id ?? ""),
-  (body) => {
-    const src = str(body.src);
-    if (!src || !(UPLOADED.test(src) || /^https?:\/\//i.test(src))) return null;
-    return {
-      // Derived from the source, so saving the same image twice updates it.
-      id: createHash("sha1").update(src).digest("hex").slice(0, 12),
-      src,
-      ...(str(body.source) ? { source: str(body.source) } : {}),
-      ...(str(body.caption) ? { caption: str(body.caption) } : {}),
-      addedAt: str(body.addedAt) ?? new Date().toISOString().slice(0, 10),
-    } as StoreEntry;
-  },
-  // An upload belongs to its entry; remove the file with it.
-  async (entry) => {
-    const src = String(entry.src ?? "");
-    if (UPLOADED.test(src)) await unlink(path.join(GALLERY_UPLOAD_DIR, path.basename(src))).catch(() => {});
-  },
-);
-
-export const { GET, DELETE } = store;
+export const { GET, DELETE } = imagesStore;
 
 /**
  * Linked images are checked before they're saved. The common mistake is
@@ -42,11 +14,14 @@ export const { GET, DELETE } = store;
 export async function POST(request: Request) {
   const denied = adminGate(request);
   if (denied) return denied;
+  const blocked = cannotSave();
+  if (blocked) return NextResponse.json({ error: blocked }, { status: 503 });
 
-  const body = (await request.json()) as StoreEntry;
-  const src = str(body.src);
+  const entry = imageEntry((await request.json()) as StoreEntry);
+  if (!entry) return NextResponse.json({ error: "invalid entry" }, { status: 400 });
 
-  if (src && /^https?:\/\//i.test(src)) {
+  const src = String(entry.src);
+  if (/^https?:\/\//i.test(src)) {
     try {
       const res = await fetch(src, { headers: { "User-Agent": "wasserstiefel.dev personal site" } });
       if (!res.ok) throw new Error(`that link answered ${res.status}`);
@@ -60,5 +35,9 @@ export async function POST(request: Request) {
     }
   }
 
-  return store.POST(new Request(request.url, { method: "POST", headers: request.headers, body: JSON.stringify(body) }));
+  try {
+    return NextResponse.json({ entries: imagesStore.shown(await imagesStore.upsert(entry)) });
+  } catch (err) {
+    return failure(err);
+  }
 }

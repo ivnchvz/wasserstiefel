@@ -1,10 +1,10 @@
 import { createStore, type StoreEntry } from "@/lib/adminStore";
 import { ALBUMS_FILE } from "@/lib/albums";
 
-const store = createStore(
-  ALBUMS_FILE,
-  (e) => String(e.id ?? `${e.artist}-${e.title}`).toLowerCase(),
-  (body) => {
+const store = createStore(ALBUMS_FILE, {
+  label: "albums",
+  keyOf: (e) => String(e.id ?? `${e.artist}-${e.title}`).toLowerCase(),
+  sanitise: (body) => {
     const id = Number(body.id);
     const title = typeof body.title === "string" ? body.title.trim() : "";
     if (!Number.isFinite(id) && !title) return null;
@@ -19,6 +19,6 @@ const store = createStore(
       ...(body.ratedAt ? { ratedAt: body.ratedAt } : {}),
     } as StoreEntry;
   },
-);
+});
 
 export const { GET, POST, DELETE } = store;

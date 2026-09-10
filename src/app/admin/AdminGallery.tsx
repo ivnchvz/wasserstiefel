@@ -44,11 +44,11 @@ function useEntries(url: string) {
     if (res.ok) setEntries((await res.json()).entries ?? []);
   }
 
-  return { entries, error, setError, add, remove };
+  return { entries, setEntries, error, setError, add, remove };
 }
 
 function Images() {
-  const { entries, error, setError, add, remove } = useEntries("/api/admin/gallery/images");
+  const { entries, setEntries, error, setError, add, remove } = useEntries("/api/admin/gallery/images");
   const [link, setLink] = useState("");
   const [caption, setCaption] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -70,13 +70,15 @@ function Images() {
       setBusy(`uploading ${i + 1} of ${list.length}…`);
       const form = new FormData();
       form.append("file", file);
+      // One caption can't describe a batch, so it only applies to a single file.
+      if (list.length === 1) form.append("caption", caption);
       const res = await fetch("/api/admin/gallery/upload", { method: "POST", body: form });
       const body = await res.json();
       if (!res.ok) {
         setError(`${file.name}: ${body.error ?? "upload failed"}`);
         break;
       }
-      await add({ src: body.src, caption: list.length === 1 ? caption : "" });
+      setEntries(body.entries ?? []);
     }
     setCaption("");
     setBusy(null);
@@ -121,7 +123,7 @@ function Images() {
           {entries.map((e) => (
             <li key={String(e.id)} className="flex flex-col gap-1.5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={String(e.src)} alt="" className="aspect-square w-full border border-rule object-cover" />
+              <img src={String(e.preview ?? e.src)} alt="" className="aspect-square w-full border border-rule object-cover" />
               <span className="truncate text-[10px] text-ink-soft">{String(e.caption ?? (String(e.src).startsWith("/") ? "upload" : "link"))}</span>
               <button type="button" onClick={() => remove(String(e.id))} className="self-start text-[10px] tracking-[0.12em] text-ink-soft hover:text-ink hover:underline">
                 remove

@@ -3,10 +3,10 @@ import { SERIES_FILE } from "@/lib/series";
 
 const STATUSES = ["watching", "completed", "dropped", "paused"];
 
-const store = createStore(
-  SERIES_FILE,
-  (e) => String(e.id ?? ""),
-  (body) => {
+const store = createStore(SERIES_FILE, {
+  label: "series",
+  keyOf: (e) => String(e.id ?? ""),
+  sanitise: (body) => {
     const id = Number(body.id);
     if (!Number.isFinite(id)) return null;
 
@@ -19,6 +19,6 @@ const store = createStore(
       ...(body.watchedAt ? { watchedAt: body.watchedAt } : {}),
     } as StoreEntry;
   },
-);
+});
 
 export const { GET, POST, DELETE } = store;

@@ -170,20 +170,28 @@ repository is writable, so add them locally and commit.
 
 ## /admin
 
-A local page for logging games and series without editing JSON by hand. Search runs
-against Backloggd's own search endpoint - which answers normally, unlike the
-member pages - so results carry the slug, cover and year straight from the
-source `games.json` already uses. Clicking a status writes the entry and
-revalidates the homepage.
+Logs games, series, albums and the gallery without editing JSON by hand.
 
-`src/data/games.json` is read from disk at request time rather than imported,
-so an admin write shows up on the next render instead of waiting for a build.
+**Locally** (`npm run dev`) it's open and writes straight to the files in
+`src/data/` and `public/gallery/` - commit them to publish.
 
-**It writes to a file in the repo, so it only works where that file is
-writable - locally.** On a serverless deploy the filesystem is read-only and
-ephemeral, so admin edits there would silently vanish. The options when this is
-deployed are to keep using admin locally and commit the file, or to move writes
-to the GitHub API (commit from the route) or a database.
+**On the live site** it needs a login, and saves become **commits** made through
+the GitHub API: Vercel deploys every push, so a change shows up about a minute
+after saving, and git stays the single record of everything. An upload and its
+list entry are one commit; removing an upload deletes its file in the same
+commit. If two saves race, the second is re-applied on top of the first rather
+than overwriting it.
 
-The routes are open in development and refuse in production unless
-`ADMIN_PASSWORD` is set and sent as `x-admin-password`.
+To turn it on, set two variables in Vercel (Project → Settings → Environment
+Variables → Production), then redeploy:
+
+- `ADMIN_PASSWORD` - long and random. The login page is on a public URL; wrong
+  guesses are slowed, but the password is the real defence. Changing it signs
+  out every session.
+- `GITHUB_TOKEN` - a **fine-grained** token limited to this repository, with
+  **Contents: Read and write** and nothing else. Create it at
+  github.com/settings/personal-access-tokens/new.
+
+Sessions are a signed, HTTP-only cookie lasting 30 days. Without
+`ADMIN_PASSWORD` admin stays shut; without `GITHUB_TOKEN` it opens but says
+saving is unavailable, rather than failing against Vercel's read-only disk.
