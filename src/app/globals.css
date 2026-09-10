@@ -37,3 +37,34 @@ body {
   background: var(--ink);
   color: var(--paper);
 }
+
+/*
+ * Source artwork sits over its halftone and fades in on attention - hover
+ * where there's a pointer, centre-of-screen where there isn't.
+ */
+.reveal-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms ease;
+}
+
+@media (hover: hover) {
+  .reveal:hover .reveal-img {
+    opacity: 1;
+  }
+}
+
+.reveal[data-centred] .reveal-img {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-img {
+    transition-duration: 1ms;
+  }
+}

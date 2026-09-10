@@ -4,6 +4,7 @@ import { getNowPlayingGame } from "@/lib/steam";
 import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
 import { getLastTrack } from "@/lib/music";
 import { HalftoneImage, AsciiImage } from "@/components/Halftone";
+import { Reveal } from "@/components/Reveal";
 import type { Favorite, SectionResult } from "@/lib/types";
 
 export const revalidate = 60;
@@ -44,7 +45,9 @@ function FavouriteGrid({ items }: { items: Favorite[] }) {
           <a href={f.url} className="group block">
             <span className="block border border-rule bg-paper p-[3px] transition-colors group-hover:border-ink">
               {f.image ? (
-                <HalftoneImage src={f.image} cols={30} rows={42} label={f.title} className="w-full text-ink" />
+                <Reveal src={f.image} alt={f.title}>
+                  <HalftoneImage src={f.image} cols={30} rows={42} label={f.title} className="w-full text-ink" />
+                </Reveal>
               ) : (
                 <span className="flex aspect-[2/3] items-center justify-center p-2 text-center text-[9px] text-ink-soft">
                   {f.title}
@@ -130,7 +133,9 @@ export default async function Home() {
             {nowGame && (
               <a href={nowGame.url} className="group flex items-center gap-6">
                 <span className="w-[132px] shrink-0 border border-rule bg-paper p-[3px]">
-                  <HalftoneImage src={nowGame.cover} cols={44} rows={21} label={nowGame.title} className="w-full text-ink" />
+                  <Reveal src={nowGame.cover} alt={nowGame.title}>
+                    <HalftoneImage src={nowGame.cover} cols={44} rows={21} label={nowGame.title} className="w-full text-ink" />
+                  </Reveal>
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[10px] tracking-[0.18em] text-ink-soft">game</span>
@@ -183,7 +188,9 @@ export default async function Home() {
                   <a href={m.url} className="group block">
                     <span className="block border border-rule bg-paper p-[3px] transition-colors group-hover:border-ink">
                       {m.poster ? (
-                        <HalftoneImage src={m.poster} cols={30} rows={42} label={m.title} className="w-full text-ink" />
+                        <Reveal src={m.poster} alt={m.title}>
+                          <HalftoneImage src={m.poster} cols={30} rows={42} label={m.title} className="w-full text-ink" />
+                        </Reveal>
                       ) : (
                         <span className="flex aspect-[2/3] items-center justify-center p-2 text-center text-[9px] text-ink-soft">
                           {m.title}
