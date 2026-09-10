@@ -50,6 +50,11 @@ async function fromExport(): Promise<Album[] | null> {
   const iFirst = pick(headers, "firstname", "artistfirstname");
   const iLast = pick(headers, "lastname", "artistlastname");
   const iArtist = pick(headers, "artist", "artistname");
+  // RYM carries a Latin transliteration alongside names in other scripts:
+  // 파란노을 / Parannoul, Молчат Дома / Molchat Doma. The transliteration is
+  // preferred - it sits in the page's typeface, and album art lookups find it.
+  const iFirstLoc = pick(headers, "firstnamelocalized");
+  const iLastLoc = pick(headers, "lastnamelocalized");
   const iYear = pick(headers, "releasedate", "year", "released");
   if (iTitle < 0 || iRating < 0) return [];
 
@@ -60,10 +65,13 @@ async function fromExport(): Promise<Album[] | null> {
     const raw = Number.parseFloat((row[iRating] ?? "").trim());
     if (!title || !Number.isFinite(raw) || raw <= 0) continue;
 
+    const join = (a: number, b: number) =>
+      [row[a] ?? "", row[b] ?? ""].map((v) => v.trim()).filter(Boolean).join(" ");
+
     const artist =
       iArtist >= 0
         ? (row[iArtist] ?? "").trim()
-        : [row[iFirst] ?? "", row[iLast] ?? ""].map((v) => v.trim()).filter(Boolean).join(" ");
+        : join(iFirstLoc, iLastLoc) || join(iFirst, iLast);
 
     albums.push({
       artist,
@@ -124,8 +132,18 @@ export async function getRatedAlbums(limit = 12): Promise<SectionResult<Album>> 
   const claimed = new Set(logged.map(keyOf));
   const merged = [...logged, ...(exported ?? []).filter((a) => !claimed.has(keyOf(a)))];
 
-  // Highest rated first, and only look up art for the ones actually shown.
-  const top = merged.sort((a, b) => b.rating - a.rating).slice(0, limit);
+  // Highest rated first. There are far more perfect scores than slots, and the
+  // export carries no date to break them with, so ties go to the newer record
+  // - alphabetical order would just show whichever artists start with an A.
+  // Title is the final tiebreak so the result is stable between builds.
+  const top = merged
+    .sort(
+      (a, b) =>
+        b.rating - a.rating ||
+        Number(b.year ?? 0) - Number(a.year ?? 0) ||
+        a.title.localeCompare(b.title),
+    )
+    .slice(0, limit);
   return {
     status: "ok",
     items: await Promise.all(
