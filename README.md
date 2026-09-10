@@ -16,6 +16,26 @@ npm run dev
 
 ## The three sources
 
+### Favourites and "now"
+
+**Favourite films** come from the Letterboxd member profile, whose four picks
+sit in a `#favourites` section. The general `User-agent: *` rules there
+disallow only sorting, genre, tag and friends paths, so the profile itself is
+fair game. Posters on that page are lazy-loaded placeholders, so the real 2:3
+artwork is read from each film page's JSON-LD `image` (`og:image` is a
+landscape crop and the wrong shape).
+
+**Favourite games** come from the Backloggd profile, which serves normally and
+carries the four picks with IGDB cover art. Only Backloggd's *sub*-pages sit
+behind the proof-of-work wall — nothing here works around it, and if the
+profile is ever closed off too, the section degrades to empty.
+
+**Now playing (game)** uses Steam's `GetPlayerSummaries`, which includes
+`gameextrainfo` only while a game is actually running — its presence *is* the
+signal. Cached 45s, the one genuinely live thing on the page.
+
+Both favourites lists cache for 24h.
+
 ### Letterboxd — working, no key needed
 
 Letterboxd publishes every member's diary at `letterboxd.com/<user>/rss/`, with

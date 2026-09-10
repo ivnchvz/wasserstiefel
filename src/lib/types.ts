@@ -45,3 +45,19 @@ export type SectionResult<T> =
   | { status: "ok"; items: T[] }
   | { status: "unconfigured"; message: string }
   | { status: "error"; message: string };
+
+export type Favorite = {
+  title: string;
+  /** Films carry a year; games generally don't. */
+  year: string | null;
+  url: string;
+  image: string | null;
+};
+
+/** A game running right now, from Steam's live presence field. */
+export type NowPlayingGame = {
+  title: string;
+  appid: string;
+  url: string;
+  cover: string;
+};

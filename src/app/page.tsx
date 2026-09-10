@@ -1,8 +1,10 @@
 import { getRecentMovies } from "@/lib/letterboxd";
 import { getRecentGames } from "@/lib/games";
+import { getNowPlayingGame } from "@/lib/steam";
+import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
 import { getLastTrack } from "@/lib/music";
 import { HalftoneImage, AsciiImage } from "@/components/Halftone";
-import type { SectionResult } from "@/lib/types";
+import type { Favorite, SectionResult } from "@/lib/types";
 
 export const revalidate = 60;
 
@@ -34,6 +36,30 @@ function Rating({ value }: { value: number | null }) {
   );
 }
 
+function FavouriteGrid({ items }: { items: Favorite[] }) {
+  return (
+    <ul className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4">
+      {items.map((f) => (
+        <li key={f.url}>
+          <a href={f.url} className="group block">
+            <span className="block border border-rule bg-paper p-[3px] transition-colors group-hover:border-ink">
+              {f.image ? (
+                <HalftoneImage src={f.image} cols={30} rows={42} label={f.title} className="w-full text-ink" />
+              ) : (
+                <span className="flex aspect-[2/3] items-center justify-center p-2 text-center text-[9px] text-ink-soft">
+                  {f.title}
+                </span>
+              )}
+            </span>
+            <span className="mt-3 block text-[11px] leading-snug group-hover:underline">{f.title}</span>
+            {f.year && <span className="mt-1 block text-[10px] tabular-nums text-ink-soft">{f.year}</span>}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function Section({
   index,
   title,
@@ -44,7 +70,7 @@ function Section({
   index: string;
   title: string;
   href?: string;
-  result: SectionResult<unknown>;
+  result?: SectionResult<unknown>;
   children: React.ReactNode;
 }) {
   return (
@@ -61,7 +87,7 @@ function Section({
           </a>
         )}
       </div>
-      {result.status === "ok" ? (
+      {!result || result.status === "ok" ? (
         children
       ) : (
         <p className="pb-10 text-[11px] leading-relaxed text-ink-soft">
@@ -73,10 +99,13 @@ function Section({
 }
 
 export default async function Home() {
-  const [movies, games, music] = await Promise.all([
+  const [movies, games, music, favFilms, favGames, nowGame] = await Promise.all([
     getRecentMovies(6),
     getRecentGames(8),
     getLastTrack(),
+    getFavoriteFilms(),
+    getFavoriteGames(),
+    getNowPlayingGame(),
   ]);
 
   const lb = process.env.LETTERBOXD_USERNAME;
@@ -96,32 +125,49 @@ export default async function Home() {
       </header>
 
       <div className="flex flex-col gap-20">
-        <Section index="01" title="now playing" href={fm ? `https://www.last.fm/user/${fm}` : undefined} result={music}>
-          {track ? (
-            <a href={track.url ?? "#"} className="group flex items-start gap-7">
-              {track.artwork && (
-                <AsciiImage
-                  src={track.artwork}
-                  cols={26}
-                  rows={26}
-                  label={`${track.title} cover`}
-                  className="shrink-0 text-[6px] text-ink"
-                />
-              )}
-              <span className="min-w-0 pt-1">
-                <span className="block text-lg font-medium tracking-[-0.02em] group-hover:underline">
-                  {track.title}
+        <Section index="01" title="now" href={fm ? `https://www.last.fm/user/${fm}` : undefined}>
+          <div className="flex flex-col gap-10">
+            {nowGame && (
+              <a href={nowGame.url} className="group flex items-center gap-6">
+                <span className="w-[132px] shrink-0 border border-rule bg-paper p-[3px]">
+                  <HalftoneImage src={nowGame.cover} cols={44} rows={21} label={nowGame.title} className="w-full text-ink" />
                 </span>
-                <span className="mt-1 block text-[12px] text-ink-soft">{track.artist}</span>
-                {track.album && <span className="mt-3 block text-[10px] text-ink-soft">{track.album}</span>}
-                <span className="mt-4 block text-[10px] tracking-[0.14em] text-ink-soft">
-                  {track.nowPlaying ? "▪ playing now" : when(track.playedAt) ?? "recently"}
+                <span className="min-w-0">
+                  <span className="block text-[10px] tracking-[0.18em] text-ink-soft">game</span>
+                  <span className="mt-1 block text-lg font-medium tracking-[-0.02em] group-hover:underline">
+                    {nowGame.title}
+                  </span>
+                  <span className="mt-2 block text-[10px] tracking-[0.14em] text-ink-soft">▪ playing now</span>
                 </span>
-              </span>
-            </a>
-          ) : (
-            <p className="text-[11px] text-ink-soft">nothing scrobbled yet</p>
-          )}
+              </a>
+            )}
+
+            {track && (
+              <a href={track.url ?? "#"} className="group flex items-start gap-7">
+                {track.artwork && (
+                  <AsciiImage src={track.artwork} cols={26} rows={26} label={`${track.title} cover`} className="shrink-0 text-[6px] text-ink" />
+                )}
+                <span className="min-w-0">
+                  <span className="block text-[10px] tracking-[0.18em] text-ink-soft">music</span>
+                  <span className="mt-1 block text-lg font-medium tracking-[-0.02em] group-hover:underline">
+                    {track.title}
+                  </span>
+                  <span className="mt-1 block text-[12px] text-ink-soft">{track.artist}</span>
+                  <span className="mt-3 block text-[10px] tracking-[0.14em] text-ink-soft">
+                    {track.nowPlaying ? "▪ playing now" : when(track.playedAt) ?? "recently"}
+                  </span>
+                </span>
+              </a>
+            )}
+
+            {!nowGame && !track && (
+              <p className="text-[11px] text-ink-soft">
+                {music.status === "unconfigured"
+                  ? `not configured — ${music.message}`
+                  : "nothing playing right now"}
+              </p>
+            )}
+          </div>
         </Section>
 
         <Section
@@ -159,6 +205,15 @@ export default async function Home() {
 
         <Section
           index="03"
+          title="favorite films"
+          href={lb ? `https://letterboxd.com/${lb}/` : undefined}
+          result={favFilms}
+        >
+          {favFilms.status === "ok" && <FavouriteGrid items={favFilms.items} />}
+        </Section>
+
+        <Section
+          index="04"
           title="recently played"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={games}
@@ -180,6 +235,15 @@ export default async function Home() {
                 </li>
               ))}
           </ul>
+        </Section>
+
+        <Section
+          index="05"
+          title="favorite games"
+          href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
+          result={favGames}
+        >
+          {favGames.status === "ok" && <FavouriteGrid items={favGames.items} />}
         </Section>
       </div>
 

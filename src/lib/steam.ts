@@ -1,4 +1,4 @@
-import type { Game } from "./types";
+import type { Game, NowPlayingGame } from "./types";
 
 const STEAM_TTL_SECONDS = 60 * 30;
 
@@ -71,4 +71,42 @@ export async function getSteamGames(limit: number): Promise<Game[] | null> {
   if (!games) throw new Error("Steam returned no games — is the profile set to public?");
 
   return mapOwnedGames(games, limit);
+}
+
+/**
+ * Steam only includes `gameextrainfo` in a player summary while a game is
+ * actually running, so its presence *is* the "playing now" signal. Returns
+ * null whenever nothing is running, or Steam isn't configured.
+ */
+export async function getNowPlayingGame(): Promise<NowPlayingGame | null> {
+  const key = process.env.STEAM_API_KEY;
+  const account = process.env.STEAM_ID;
+  if (!key || !account) return null;
+
+  try {
+    const steamId = await resolveSteamId(account, key);
+    if (!steamId) return null;
+
+    const url = new URL("https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/");
+    url.searchParams.set("key", key);
+    url.searchParams.set("steamids", steamId);
+
+    // Presence is the one genuinely live thing here; keep it short.
+    const res = await fetch(url, { next: { revalidate: 45 } });
+    if (!res.ok) return null;
+
+    const player = (await res.json())?.response?.players?.[0];
+    const title: string | undefined = player?.gameextrainfo;
+    const appid: string | undefined = player?.gameid;
+    if (!title || !appid) return null;
+
+    return {
+      title,
+      appid,
+      url: `https://store.steampowered.com/app/${appid}/`,
+      cover: `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`,
+    };
+  } catch {
+    return null;
+  }
 }
