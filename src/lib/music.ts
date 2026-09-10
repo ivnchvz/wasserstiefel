@@ -47,7 +47,28 @@ export function parseLastfmTrack(raw: LastfmTrack): Track | null {
  * Apple Music into Last.fm (Marvis, NepTunes, Cider) and reading Last.fm's
  * open API is the durable way to surface a last-played track on a static site.
  */
-export async function getLastTrack(): Promise<SectionResult<Track>> {
+/**
+ * Last.fm scrobbles a track once it passes its halfway point, so a song still
+ * playing also appears as the newest history entry. Within this window of the
+ * current song, the same title and artist are taken to be the same play rather
+ * than a replay.
+ */
+const SAME_PLAY_MS = 15 * 60 * 1000;
+
+function samePlay(current: Track, earlier: Track): boolean {
+  if (current.title !== earlier.title || current.artist !== earlier.artist) return false;
+  if (!earlier.playedAt) return true;
+  return Date.now() - new Date(earlier.playedAt).getTime() < SAME_PLAY_MS;
+}
+
+/**
+ * The newest track, then up to `count` before it. Apple Music has no public
+ * "recently played" feed for a third party, and its MusicKit equivalent needs
+ * a per-listener token that expires. Scrobbling Apple Music into Last.fm
+ * (NepTunes, QuietScrob, Cider) and reading Last.fm's open API is the durable
+ * way to surface listening on a static site.
+ */
+export async function getRecentTracks(count = 5): Promise<SectionResult<Track>> {
   const user = LASTFM_USER;
   const key = process.env.LASTFM_API_KEY;
   // Only the key is missing when unset; the username is baked in.
@@ -60,7 +81,8 @@ export async function getLastTrack(): Promise<SectionResult<Track>> {
   url.searchParams.set("user", user);
   url.searchParams.set("api_key", key);
   url.searchParams.set("format", "json");
-  url.searchParams.set("limit", "1");
+  // Headroom for the now-playing entry and a duplicate of it.
+  url.searchParams.set("limit", String(count + 2));
 
   try {
     const res = await fetch(url, { next: { revalidate: NOW_PLAYING_TTL_SECONDS } });
@@ -71,10 +93,14 @@ export async function getLastTrack(): Promise<SectionResult<Track>> {
     }
 
     const raw = body?.recenttracks?.track;
-    const first: LastfmTrack | undefined = Array.isArray(raw) ? raw[0] : raw;
-    const track = first ? parseLastfmTrack(first) : null;
+    const list: LastfmTrack[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    const tracks = list.map(parseLastfmTrack).filter((t): t is Track => t !== null);
+    if (tracks.length === 0) return { status: "ok", items: [] };
 
-    return { status: "ok", items: track ? [track] : [] };
+    const [latest, ...rest] = tracks;
+    const history = latest.nowPlaying && rest[0] && samePlay(latest, rest[0]) ? rest.slice(1) : rest;
+
+    return { status: "ok", items: [latest, ...history.slice(0, count)] };
   } catch (err) {
     return { status: "error", message: err instanceof Error ? err.message : "Last.fm fetch failed" };
   }

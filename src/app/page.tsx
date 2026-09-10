@@ -4,9 +4,10 @@ import { getSeries } from "@/lib/series";
 import { getRatedAlbums } from "@/lib/albums";
 import { getNowPlayingGame } from "@/lib/steam";
 import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
-import { getLastTrack } from "@/lib/music";
+import { getRecentTracks } from "@/lib/music";
 import { HalftoneImage, AsciiImage } from "@/components/Halftone";
 import { Reveal } from "@/components/Reveal";
+import { LocalTime } from "@/components/LocalTime";
 import { NowPlayingBanner } from "@/components/NowPlayingBanner";
 import { halftone } from "@/lib/halftone";
 import type { NowPlayingPayload } from "./api/now-playing/route";
@@ -226,7 +227,7 @@ export default async function Home() {
       getSeries("watching", 12),
       getSeries("completed", 12),
       getRatedAlbums(12),
-      getLastTrack(),
+      getRecentTracks(5),
       getFavoriteFilms(),
       getFavoriteGames(),
       getNowPlayingGame(),
@@ -250,6 +251,7 @@ export default async function Home() {
   const bl = BACKLOGGD_USER;
   const fm = LASTFM_USER;
   const track = music.status === "ok" ? music.items[0] : undefined;
+  const recentTracks = music.status === "ok" ? music.items.slice(1) : [];
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-16 sm:px-10 sm:py-24">
@@ -279,10 +281,34 @@ export default async function Home() {
                   </span>
                   <span className="mt-1 block text-[12px] text-ink-soft">{track.artist}</span>
                   <span className="mt-3 block text-[10px] tracking-[0.14em] text-ink-soft">
-                    {track.nowPlaying ? "▪ playing now" : when(track.playedAt) ?? "recently"}
+                    {track.nowPlaying ? "▪ playing now" : track.playedAt ? <LocalTime iso={track.playedAt} /> : "recently"}
                   </span>
                 </span>
               </a>
+            )}
+
+            {recentTracks.length > 0 && (
+              <div>
+                <h3 className="mb-2 text-[10px] tracking-[0.18em] text-ink-soft">before that</h3>
+                <ol>
+                  {recentTracks.map((t, i) => (
+                    <li key={`${t.playedAt ?? i}-${t.title}`} className="border-b border-rule first:border-t">
+                      <a
+                        href={t.url ?? "#"}
+                        className="group grid grid-cols-[1fr_auto] items-baseline gap-4 py-2.5"
+                      >
+                        <span className="min-w-0 truncate text-[12px] tracking-[-0.01em]">
+                          <span className="group-hover:underline">{t.title}</span>
+                          <span className="text-ink-soft"> — {t.artist}</span>
+                        </span>
+                        <span className="text-right text-[10px] tabular-nums text-ink-soft">
+                          {t.playedAt ? <LocalTime iso={t.playedAt} /> : "—"}
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             )}
 
             {!track && (
