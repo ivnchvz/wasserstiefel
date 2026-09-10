@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminLibrary, type LibraryConfig } from "./AdminLibrary";
+import { AdminGallery } from "./AdminGallery";
 
 export const metadata: Metadata = {
   title: "admin",
@@ -63,6 +64,7 @@ export default function AdminPage() {
         <AdminLibrary config={GAMES} />
         <AdminLibrary config={SERIES} />
         <AdminLibrary config={ALBUMS} />
+        <AdminGallery />
       </div>
     </main>
   );

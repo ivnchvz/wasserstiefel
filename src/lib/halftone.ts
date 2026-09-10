@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import sharp from "sharp";
 
 /**
@@ -18,20 +20,57 @@ export type Halftone = {
  * poster reduces a photograph to squares. Rendering is left to the caller
  * so the same grid can drive squares, characters or anything else.
  */
+/**
+ * Site-relative sources ("/gallery/x.jpg") are uploads sitting in public/,
+ * which the server can't fetch from itself before it is listening - so they
+ * are read from disk. Anything else is fetched and cached like artwork.
+ */
+async function load(src: string): Promise<Buffer | null> {
+  if (src.startsWith("/")) {
+    const file = path.join(process.cwd(), "public", path.normalize(src).replace(/^([/\\])+/, ""));
+    // normalize() above plus this check keep a crafted path inside public/.
+    if (!file.startsWith(path.join(process.cwd(), "public") + path.sep)) return null;
+    return readFile(file).catch(() => null);
+  }
+
+  const res = await fetch(src, {
+    headers: { "User-Agent": "wasserstiefel.dev personal site" },
+    next: { revalidate: 60 * 60 * 24 * 7 }, // artwork is effectively immutable
+  });
+  return res.ok ? Buffer.from(await res.arrayBuffer()) : null;
+}
+
+/** Tallest grid an "auto" height may produce, so a panorama's inverse can't run away. */
+const MAX_AUTO_ROWS = 80;
+
 export async function halftone(
   src: string,
   cols: number,
-  rows: number,
+  /**
+   * A fixed height, or "auto" to follow the image's own proportions - posters
+   * are all 2:3, but a gallery of saved images is anything but.
+   */
+  rowsOrAuto: number | "auto",
   { gamma = GAMMA, invert = false }: { gamma?: number; invert?: boolean } = {},
 ): Promise<Halftone | null> {
   try {
-    const res = await fetch(src, {
-      headers: { "User-Agent": "wasserstiefel.dev personal site" },
-      next: { revalidate: 60 * 60 * 24 * 7 }, // artwork is effectively immutable
-    });
-    if (!res.ok) return null;
+    const buf = await load(src);
+    if (!buf) return null;
 
-    const { data } = await sharp(Buffer.from(await res.arrayBuffer()))
+    let rows: number;
+    if (rowsOrAuto === "auto") {
+      // rotate() applies EXIF orientation, so phone photos keep the shape they
+      // were taken in rather than the sensor's.
+      const meta = await sharp(buf).rotate().metadata();
+      const w = meta.autoOrient?.width ?? meta.width ?? cols;
+      const h = meta.autoOrient?.height ?? meta.height ?? cols;
+      rows = Math.max(4, Math.min(MAX_AUTO_ROWS, Math.round((cols * h) / w)));
+    } else {
+      rows = rowsOrAuto;
+    }
+
+    const { data } = await sharp(buf)
+      .rotate()
       .resize(cols, rows, { fit: "fill" })
       .greyscale()
       .raw()

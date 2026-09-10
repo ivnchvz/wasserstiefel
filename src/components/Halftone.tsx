@@ -19,7 +19,8 @@ export async function HalftoneImage({
 }: {
   src: string;
   cols?: number;
-  rows?: number;
+  /** A fixed height, or "auto" to keep the image's own proportions. */
+  rows?: number | "auto";
   className?: string;
   label?: string;
   /** Draw the marks for light instead of dark, for use on an ink ground. */
@@ -28,8 +29,11 @@ export async function HalftoneImage({
   const grid = await halftone(src, cols, rows, { invert });
   if (!grid) return <span className={`block bg-[--ink]/5 ${className ?? ""}`} />;
 
+  // With "auto" the height is only known once the image has been read.
+  const { rows: h } = grid;
+
   const squares = [];
-  for (let y = 0; y < rows; y++) {
+  for (let y = 0; y < h; y++) {
     for (let x = 0; x < cols; x++) {
       const d = grid.cells[y * cols + x];
       if (d < INK_FLOOR) continue;
@@ -52,7 +56,7 @@ export async function HalftoneImage({
 
   return (
     <svg
-      viewBox={`0 0 ${cols} ${rows}`}
+      viewBox={`0 0 ${cols} ${h}`}
       className={className}
       role="img"
       aria-label={label ?? "halftone image"}

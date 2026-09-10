@@ -10,7 +10,13 @@ export type StoreEntry = Record<string, unknown>;
  * in the repo, so they share one set of handlers. `keyOf` decides identity, so
  * logging the same title twice updates rather than duplicates.
  */
-export function createStore(file: string, keyOf: (e: StoreEntry) => string, sanitise: (body: StoreEntry) => StoreEntry | null) {
+export function createStore(
+  file: string,
+  keyOf: (e: StoreEntry) => string,
+  sanitise: (body: StoreEntry) => StoreEntry | null,
+  /** Runs for each entry removed, e.g. to delete a file it owned. */
+  onDelete?: (entry: StoreEntry) => Promise<void>,
+) {
   async function load(): Promise<StoreEntry[]> {
     try {
       const parsed: unknown = JSON.parse(await readFile(file, "utf8"));
@@ -57,8 +63,11 @@ export function createStore(file: string, keyOf: (e: StoreEntry) => string, sani
       if (denied) return denied;
 
       const key = new URL(request.url).searchParams.get("key") ?? "";
-      await save((await load()).filter((e) => keyOf(e) !== key));
-      return NextResponse.json({ entries: await load() });
+      const all = await load();
+      const kept = all.filter((e) => keyOf(e) !== key);
+      await save(kept);
+      if (onDelete) await Promise.all(all.filter((e) => keyOf(e) === key).map(onDelete));
+      return NextResponse.json({ entries: kept });
     },
   };
 }

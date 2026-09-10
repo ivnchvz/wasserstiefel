@@ -141,6 +141,33 @@ used elsewhere. Unrated rows (`0`) are skipped. Cover art is looked up from the
 iTunes Search API, which needs no key — a few releases aren't in its index, and
 those fall back to a titled placeholder.
 
+## Gallery
+
+Section 09, with two tabs, both filled from `/admin`.
+
+**Images** are either linked (`src/data/gallery-images.json` stores the URL)
+or uploaded. A link is checked before it's saved, since the usual mistake is
+pasting the address of the page an image sits on rather than the image itself.
+Uploads are written to `public/gallery/`, re-encoded on the way in: rotated
+upright, downscaled to 1600px on the long edge, flattened onto the paper
+colour, and **stripped of all metadata** - phone photos carry GPS coordinates,
+and this repository is public. They're named by content hash, and removing one
+in admin deletes its file.
+
+Halftones in the gallery follow each image's own proportions rather than the
+2:3 of posters, laid out in columns so nothing is cropped.
+
+**Reels** store only an Instagram shortcode. The page shows a paper tile; the
+official Instagram embed is loaded into an overlay only when it's clicked, and
+removed when it closes. Nothing is requested from Instagram before that - a
+visitor who never opens a reel never contacts it (opening one makes around 40
+requests). The player reports its own height, which sizes the overlay exactly.
+No media is extracted from Instagram: its image URLs are signed and expire
+within days, and the embed is the sanctioned way to show a post.
+
+Uploads have the same limit as the rest of admin - they only persist where the
+repository is writable, so add them locally and commit.
+
 ## /admin
 
 A local page for logging games and series without editing JSON by hand. Search runs

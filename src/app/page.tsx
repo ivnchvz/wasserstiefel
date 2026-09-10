@@ -2,12 +2,14 @@ import { getRecentMovies, getRecentReviews } from "@/lib/letterboxd";
 import { getRecentGames, getFinishedGames } from "@/lib/games";
 import { getSeries } from "@/lib/series";
 import { getRatedAlbums } from "@/lib/albums";
+import { getGalleryImages, getReels } from "@/lib/gallery";
 import { getNowPlayingGame } from "@/lib/steam";
 import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
 import { getRecentTracks, withArtwork } from "@/lib/music";
 import { HalftoneImage } from "@/components/Halftone";
 import { Reveal } from "@/components/Reveal";
 import { NowListening } from "@/components/NowListening";
+import { ReelTile } from "@/components/ReelTile";
 import { NowPlayingBanner } from "@/components/NowPlayingBanner";
 import { halftone } from "@/lib/halftone";
 import type { NowPlayingPayload } from "./api/now-playing/route";
@@ -218,7 +220,7 @@ function Section({
 }
 
 export default async function Home() {
-  const [movies, reviews, games, finished, watching, seenSeries, albums, music, favFilms, favGames, nowGame] =
+  const [movies, reviews, games, finished, watching, seenSeries, albums, gallery, reels, music, favFilms, favGames, nowGame] =
     await Promise.all([
       getRecentMovies(6),
       getRecentReviews(4),
@@ -227,6 +229,8 @@ export default async function Home() {
       getSeries("watching", 12),
       getSeries("completed", 12),
       getRatedAlbums(12),
+      getGalleryImages(),
+      getReels(),
       getRecentTracks(5),
       getFavoriteFilms(),
       getFavoriteGames(),
@@ -610,6 +614,67 @@ export default async function Home() {
           result={favGames}
         >
           {favGames.status === "ok" && <FavouriteGrid items={favGames.items} />}
+        </Section>
+
+        <Section index="09" title="gallery">
+          <div className="flex flex-wrap items-center gap-x-7">
+            <input type="radio" name="gallery-tab" id="gallery-images" defaultChecked className="peer/images sr-only" />
+            <input type="radio" name="gallery-tab" id="gallery-reels" className="peer/reels sr-only" />
+
+            <label htmlFor="gallery-images" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/images:border-ink peer-checked/images:text-ink">
+              images
+            </label>
+            <label htmlFor="gallery-reels" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/reels:border-ink peer-checked/reels:text-ink">
+              reels
+            </label>
+
+            <div className="mt-9 hidden w-full peer-checked/images:block">
+              {gallery.status === "ok" && gallery.items.length > 0 ? (
+                /*
+                 * Columns rather than a grid: saved images come in every
+                 * shape, and the halftone keeps each one's proportions, so a
+                 * masonry flow wastes no space on cropping or gaps.
+                 */
+                <ul className="columns-2 gap-6 sm:columns-3 lg:columns-4">
+                  {gallery.items.map((g) => (
+                    <li key={g.id} className="mb-8 break-inside-avoid">
+                      <span className="block border border-rule bg-paper p-[3px]">
+                        <Reveal src={g.src} alt={g.caption ?? "saved image"}>
+                          <HalftoneImage src={g.src} cols={32} rows="auto" label={g.caption ?? "saved image"} className="w-full text-ink" />
+                        </Reveal>
+                      </span>
+                      {(g.caption || g.source) && (
+                        <span className="mt-2 flex items-baseline justify-between gap-3 text-[10px] leading-snug">
+                          <span className="text-ink">{g.caption}</span>
+                          {g.source && (
+                            <a href={g.source} className="shrink-0 tracking-[0.1em] text-ink-soft hover:text-ink hover:underline">
+                              source ↗
+                            </a>
+                          )}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-[11px] text-ink-soft">nothing here yet — add images from /admin</p>
+              )}
+            </div>
+
+            <div className="mt-9 hidden w-full peer-checked/reels:block">
+              {reels.status === "ok" && reels.items.length > 0 ? (
+                <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
+                  {reels.items.map((r, i) => (
+                    <li key={r.shortcode}>
+                      <ReelTile shortcode={r.shortcode} note={r.note} index={i} />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-[11px] text-ink-soft">nothing here yet — add reels from /admin</p>
+              )}
+            </div>
+          </div>
         </Section>
       </div>
 
