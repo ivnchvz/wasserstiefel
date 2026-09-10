@@ -100,9 +100,25 @@ overwritten.
 
 `BACKLOGGD_USERNAME` is used only to link out to the profile.
 
+## Series
+
+`src/data/series.json`, logged from `/admin`. Letterboxd doesn't cover
+television and Backloggd is games-only, so series come from
+[TVmaze](https://www.tvmaze.com/api), which is open and needs no key.
+
+Entries store a TVmaze id and whatever is personal to them; the title, year and
+artwork are looked up and cached for a week:
+
+```json
+[{ "id": 156, "title": "Twin Peaks", "status": "watching", "watchedAt": "2026-09-10" }]
+```
+
+Statuses are `watching`, `completed`, `dropped` and `paused`; the section shows
+the first two under its tabs.
+
 ## /admin
 
-A local page for logging games without editing JSON by hand. Search runs
+A local page for logging games and series without editing JSON by hand. Search runs
 against Backloggd's own search endpoint - which answers normally, unlike the
 member pages - so results carry the slug, cover and year straight from the
 source `games.json` already uses. Clicking a status writes the entry and

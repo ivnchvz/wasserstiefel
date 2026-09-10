@@ -1,5 +1,6 @@
 import { getRecentMovies, getRecentReviews } from "@/lib/letterboxd";
 import { getRecentGames, getFinishedGames } from "@/lib/games";
+import { getSeries } from "@/lib/series";
 import { getNowPlayingGame } from "@/lib/steam";
 import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
 import { getLastTrack } from "@/lib/music";
@@ -211,16 +212,19 @@ function Section({
 }
 
 export default async function Home() {
-  const [movies, reviews, games, finished, music, favFilms, favGames, nowGame] = await Promise.all([
-    getRecentMovies(6),
-    getRecentReviews(4),
-    getRecentGames(11),
-    getFinishedGames(12),
-    getLastTrack(),
-    getFavoriteFilms(),
-    getFavoriteGames(),
-    getNowPlayingGame(),
-  ]);
+  const [movies, reviews, games, finished, watching, seenSeries, music, favFilms, favGames, nowGame] =
+    await Promise.all([
+      getRecentMovies(6),
+      getRecentReviews(4),
+      getRecentGames(11),
+      getFinishedGames(12),
+      getSeries("watching", 12),
+      getSeries("completed", 12),
+      getLastTrack(),
+      getFavoriteFilms(),
+      getFavoriteGames(),
+      getNowPlayingGame(),
+    ]);
 
   const lb = process.env.LETTERBOXD_USERNAME;
   const bl = process.env.BACKLOGGD_USERNAME;
@@ -394,8 +398,87 @@ export default async function Home() {
           {favFilms.status === "ok" && <FavouriteGrid items={favFilms.items} />}
         </Section>
 
+
+        <Section index="05" title="series">
+          <div className="flex flex-wrap items-center gap-x-7">
+            <input type="radio" name="series-tab" id="series-watching" defaultChecked className="peer/watching sr-only" />
+            <input type="radio" name="series-tab" id="series-seen" className="peer/seen sr-only" />
+
+            <label htmlFor="series-watching" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/watching:border-ink peer-checked/watching:text-ink">
+              watching
+            </label>
+            <label htmlFor="series-seen" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/seen:border-ink peer-checked/seen:text-ink">
+              finished
+            </label>
+
+            <div className="mt-9 hidden w-full peer-checked/watching:block">
+              {watching.status === "ok" &&
+                (watching.items.length === 0 ? (
+                  <p className="max-w-[60ch] text-[11px] leading-relaxed text-ink-soft">nothing in progress — add series from /admin</p>
+                ) : (
+                  <ul className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 lg:grid-cols-6">
+                    {watching.items.map((s) => (
+                      <li key={s.id}>
+                        <a href={s.url} className="group block">
+                          <span className="block border border-rule bg-paper p-[3px] transition-colors group-hover:border-ink">
+                            {s.poster ? (
+                              <Reveal src={s.poster} alt={s.title}>
+                                <HalftoneImage src={s.poster} cols={30} rows={42} label={s.title} className="w-full text-ink" />
+                              </Reveal>
+                            ) : (
+                              <span className="flex aspect-[2/3] items-center justify-center p-2 text-center text-[9px] text-ink-soft">
+                                {s.title}
+                              </span>
+                            )}
+                          </span>
+                          <span className="mt-3 block text-[11px] leading-snug group-hover:underline">{s.title}</span>
+                          <span className="mt-1 flex flex-wrap items-center gap-x-2">
+                            {s.year && <span className="text-[10px] tabular-nums text-ink-soft">{s.year}</span>}
+                            <Rating value={s.rating} />
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ))}
+            </div>
+
+            <div className="mt-9 hidden w-full peer-checked/seen:block">
+              {seenSeries.status === "ok" &&
+                (seenSeries.items.length === 0 ? (
+                  <p className="max-w-[60ch] text-[11px] leading-relaxed text-ink-soft">nothing finished yet — add series from /admin</p>
+                ) : (
+                  <ul className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 lg:grid-cols-6">
+                    {seenSeries.items.map((s) => (
+                      <li key={s.id}>
+                        <a href={s.url} className="group block">
+                          <span className="block border border-rule bg-paper p-[3px] transition-colors group-hover:border-ink">
+                            {s.poster ? (
+                              <Reveal src={s.poster} alt={s.title}>
+                                <HalftoneImage src={s.poster} cols={30} rows={42} label={s.title} className="w-full text-ink" />
+                              </Reveal>
+                            ) : (
+                              <span className="flex aspect-[2/3] items-center justify-center p-2 text-center text-[9px] text-ink-soft">
+                                {s.title}
+                              </span>
+                            )}
+                          </span>
+                          <span className="mt-3 block text-[11px] leading-snug group-hover:underline">{s.title}</span>
+                          <span className="mt-1 flex flex-wrap items-center gap-x-2">
+                            {s.year && <span className="text-[10px] tabular-nums text-ink-soft">{s.year}</span>}
+                            <Rating value={s.rating} />
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ))}
+            </div>
+          </div>
+        </Section>
+
         <Section
-          index="05"
+          index="06"
           title="played"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={games}
@@ -519,7 +602,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="06"
+          index="07"
           title="favorite games"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={favGames}

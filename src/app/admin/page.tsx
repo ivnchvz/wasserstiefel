@@ -1,10 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AdminGames } from "./AdminGames";
+import { AdminLibrary, type LibraryConfig } from "./AdminLibrary";
 
 export const metadata: Metadata = {
   title: "admin",
   robots: { index: false, follow: false },
+};
+
+const GAMES: LibraryConfig = {
+  kind: "games",
+  heading: "games",
+  placeholder: "search backloggd…",
+  statuses: ["playing", "completed", "retired", "shelved"],
+  dateField: "playedAt",
+  idField: "slug",
+};
+
+const SERIES: LibraryConfig = {
+  kind: "series",
+  heading: "series",
+  placeholder: "search tvmaze…",
+  statuses: ["watching", "completed", "dropped", "paused"],
+  dateField: "watchedAt",
+  idField: "id",
 };
 
 export default function AdminPage() {
@@ -16,7 +34,11 @@ export default function AdminPage() {
           ← back to the site
         </Link>
       </header>
-      <AdminGames />
+
+      <div className="flex flex-col gap-20">
+        <AdminLibrary config={GAMES} />
+        <AdminLibrary config={SERIES} />
+      </div>
     </main>
   );
 }
