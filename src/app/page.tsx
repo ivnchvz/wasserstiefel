@@ -62,31 +62,55 @@ function ReviewBody({ paragraphs, url }: { paragraphs: string[]; url: string }) 
 
 function Review({ movie }: { movie: Movie }) {
   const paragraphs = movie.review ?? [];
+  // Stable per-review id so the checkbox and its labels pair up.
+  const id = `rev-${movie.url.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "")}`;
+
   return (
-    <li className="border-t border-rule py-8 first:border-t-0 first:pt-0">
+    <li className="group border-t border-rule py-8 first:border-t-0 first:pt-0">
+      {/*
+       * Reviews run long, and on a phone they push everything below them off
+       * the screen. Narrow viewports collapse each one behind a tap; wide ones
+       * ignore the checkbox entirely and always show the text. Done with a
+       * checkbox rather than state so the server renders it collapsed and
+       * there's no expanded flash before hydration.
+       */}
+      <input type="checkbox" id={id} className="sr-only" aria-label={`Read the review of ${movie.title}`} />
+
       <div className="grid gap-6 sm:grid-cols-[86px_1fr]">
-        <div>
+        <div className="relative w-[86px]">
           {movie.poster && (
-            <a href={movie.url} className="group block w-[86px] border border-rule bg-paper p-[3px] transition-colors hover:border-ink">
+            <a href={movie.url} className="block border border-rule bg-paper p-[3px] transition-colors hover:border-ink">
               <Reveal src={movie.poster} alt={movie.title}>
                 <HalftoneImage src={movie.poster} cols={26} rows={36} label={movie.title} className="w-full text-ink" />
               </Reveal>
             </a>
           )}
+          {/* On a phone the poster opens the review instead of leaving the
+              page; the label sits over it and is dropped at sm. */}
+          <label htmlFor={id} className="absolute inset-0 z-10 cursor-pointer sm:hidden" aria-hidden="true" />
         </div>
+
         <div className="min-w-0">
-          <a href={movie.url} className="group inline-flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="text-[14px] font-medium tracking-[-0.01em] group-hover:underline">{movie.title}</span>
+          <a href={movie.url} className="group/t inline-flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="text-[14px] font-medium tracking-[-0.01em] group-hover/t:underline">{movie.title}</span>
             <span className="text-[10px] tabular-nums text-ink-soft">{movie.year}</span>
             <Rating value={movie.rating} />
             <span className="text-[10px] tabular-nums text-ink-soft">{when(movie.watchedAt)}</span>
             {movie.rewatch && <span className="text-[10px] tracking-[0.12em] text-ink-soft">rewatch</span>}
           </a>
 
-          <div className="mt-4">
+          <label
+            htmlFor={id}
+            className="mt-3 inline-block cursor-pointer text-[10px] tracking-[0.14em] text-ink-soft hover:text-ink sm:hidden"
+          >
+            <span className="group-has-[:checked]:hidden">▸ read review</span>
+            <span className="hidden group-has-[:checked]:inline">▾ hide review</span>
+          </label>
+
+          <div className="mt-4 hidden group-has-[:checked]:block sm:block">
             {movie.spoilers ? (
               /* Flagged by the member, so it stays shut until asked for. */
-              <details className="group/sp">
+              <details>
                 <summary className="cursor-pointer list-none text-[10px] tracking-[0.14em] text-ink-soft hover:text-ink">
                   ▸ contains spoilers — reveal
                 </summary>
