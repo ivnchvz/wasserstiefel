@@ -76,24 +76,26 @@ export function Reveal({
 
   const visible = (canHover && hovered) || centred;
 
-  const ms = instant ? 1 : 520;
   const soft = !instant;
 
-  // The two layers hand off rather than fading in step. If both sit at part
-  // opacity together the paper ground shows through and the picture goes
-  // milky, so the incoming image rises fast (ease-out) while the halftone
-  // holds and then drops late (ease-in). Combined cover stays high the whole
-  // way, and no paper is ever visible between them.
-  // A CSS transition applies the same curve in both directions, so the pair is
-  // swapped by state: whichever layer is arriving rises fast, whichever is
-  // leaving holds and drops late. Without this the exit mirrors the entrance
-  // and opens the very gap the entrance was tuned to avoid.
-  const RISE = "cubic-bezier(0.22, 0.61, 0.36, 1)";
-  const HOLD = "cubic-bezier(0.55, 0.055, 0.675, 0.19)";
-  const arriving = visible ? RISE : HOLD;
-  const leaving = visible ? HOLD : RISE;
-  const move = (specs: [string, string][]) =>
-    specs.map(([prop, ease]) => `${prop} ${ms}ms ${ease}`).join(", ");
+  /*
+   * Revealing and hiding are not the same gesture, so they aren't timed the
+   * same. Revealing is the one that has to feel good: the picture eases in
+   * over ~620ms while the halftone takes ~900ms to go. Because the photo
+   * reaches full opacity first, the grid's last stretch finishes underneath
+   * something already opaque - so the awkward end of its fade is simply never
+   * seen. An earlier version had the dots drop from 0.66 to 0 over the final
+   * third and that late cliff was the part that read as a snap.
+   *
+   * Both use a symmetric ease so neither end lurches. Hiding is quicker, and
+   * the dots come back faster than the photo leaves so nothing flashes.
+   */
+  const SMOOTH = "cubic-bezier(0.4, 0, 0.2, 1)";
+  const photoMs = instant ? 1 : visible ? 620 : 400;
+  const dotsMs = instant ? 1 : visible ? 900 : 300;
+
+  const move = (specs: [string, number][]) =>
+    specs.map(([prop, d]) => `${prop} ${d}ms ${SMOOTH}`).join(", ");
 
   return (
     <span
@@ -117,8 +119,8 @@ export function Reveal({
           opacity: visible ? 0 : 1,
           filter: soft && visible ? "blur(3px)" : "blur(0px)",
           transition: move([
-            ["opacity", leaving],
-            ["filter", RISE],
+            ["opacity", dotsMs],
+            ["filter", dotsMs],
           ]),
           willChange: "opacity, filter",
         }}
@@ -143,9 +145,9 @@ export function Reveal({
             filter: soft && !visible ? "blur(5px)" : "blur(0px)",
             transform: soft && !visible ? "scale(1.03)" : "scale(1)",
             transition: move([
-              ["opacity", arriving],
-              ["filter", RISE],
-              ["transform", RISE],
+              ["opacity", photoMs],
+              ["filter", photoMs],
+              ["transform", photoMs],
             ]),
             willChange: "opacity, filter, transform",
             pointerEvents: "none",
