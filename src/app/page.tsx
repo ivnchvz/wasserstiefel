@@ -7,6 +7,9 @@ import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
 import { getLastTrack } from "@/lib/music";
 import { HalftoneImage, AsciiImage } from "@/components/Halftone";
 import { Reveal } from "@/components/Reveal";
+import { NowPlayingBanner } from "@/components/NowPlayingBanner";
+import { halftone } from "@/lib/halftone";
+import type { NowPlayingPayload } from "./api/now-playing/route";
 import type { Favorite, Movie, SectionResult } from "@/lib/types";
 
 export const revalidate = 60;
@@ -228,6 +231,20 @@ export default async function Home() {
       getNowPlayingGame(),
     ]);
 
+  // Rendered once on the server so the banner is in the first paint and works
+  // without scripting; the component polls from there.
+  let initialNowPlaying: NowPlayingPayload = null;
+  if (nowGame) {
+    const grid = await halftone(nowGame.cover, 44, 21, { invert: true });
+    initialNowPlaying = {
+      title: nowGame.title,
+      url: nowGame.url,
+      cols: 44,
+      rows: 21,
+      cells: grid ? grid.cells.map((c) => Math.round(c * 100) / 100) : [],
+    };
+  }
+
   const lb = process.env.LETTERBOXD_USERNAME;
   const bl = process.env.BACKLOGGD_USERNAME;
   const fm = process.env.LASTFM_USERNAME;
@@ -244,40 +261,7 @@ export default async function Home() {
         </p>
       </header>
 
-      {nowGame && (
-        /*
-         * Being in a game is the most perishable thing on the page and the
-         * only state that is true right now, so it gets its own block rather
-         * than a line inside a section. Inverted to ink, which also flips the
-         * halftone to paper-on-black - the same grid read as a negative.
-         */
-        <a
-          href={nowGame.url}
-          className="group mb-16 -mt-8 block bg-ink px-6 py-6 text-paper transition-opacity hover:opacity-90 sm:px-8"
-        >
-          <span className="flex items-center gap-6">
-            <span className="w-[124px] shrink-0 border border-paper/25 p-[2px]">
-              <HalftoneImage
-                src={nowGame.cover}
-                cols={44}
-                rows={21}
-                label={nowGame.title}
-                className="w-full text-paper"
-                invert
-              />
-            </span>
-            <span className="min-w-0">
-              <span className="flex items-center gap-2 text-[10px] tracking-[0.24em] text-paper/70">
-                <span className="pulse-mark">▪</span> playing now
-              </span>
-              <span className="mt-2 block truncate text-xl font-medium tracking-[-0.02em] group-hover:underline sm:text-2xl">
-                {nowGame.title}
-              </span>
-              <span className="mt-1 block text-[10px] tracking-[0.14em] text-paper/50">steam</span>
-            </span>
-          </span>
-        </a>
-      )}
+      <NowPlayingBanner initial={initialNowPlaying} />
 
       <div className="flex flex-col gap-20">
         <Section index="01" title="now" href={fm ? `https://www.last.fm/user/${fm}` : undefined}>
