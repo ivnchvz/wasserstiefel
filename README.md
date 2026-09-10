@@ -99,3 +99,23 @@ hand wins over the lookup, so a personal rating or platform is never
 overwritten.
 
 `BACKLOGGD_USERNAME` is used only to link out to the profile.
+
+## /admin
+
+A local page for logging games without editing JSON by hand. Search runs
+against Backloggd's own search endpoint - which answers normally, unlike the
+member pages - so results carry the slug, cover and year straight from the
+source `games.json` already uses. Clicking a status writes the entry and
+revalidates the homepage.
+
+`src/data/games.json` is read from disk at request time rather than imported,
+so an admin write shows up on the next render instead of waiting for a build.
+
+**It writes to a file in the repo, so it only works where that file is
+writable - locally.** On a serverless deploy the filesystem is read-only and
+ephemeral, so admin edits there would silently vanish. The options when this is
+deployed are to keep using admin locally and commit the file, or to move writes
+to the GitHub API (commit from the route) or a database.
+
+The routes are open in development and refuse in production unless
+`ADMIN_PASSWORD` is set and sent as `x-admin-password`.

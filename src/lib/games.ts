@@ -1,7 +1,24 @@
 import type { Game, SectionResult } from "./types";
 import { getSteamGames } from "./steam";
 import { getGameBySlug } from "./backloggd";
-import raw from "@/data/games.json";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
+export const GAMES_FILE = path.join(process.cwd(), "src", "data", "games.json");
+
+/**
+ * Read at request time rather than imported. A static import is inlined at
+ * build, so anything written by the admin page would not appear until the
+ * next build; read from disk, a revalidation is enough.
+ */
+async function readEntries(): Promise<unknown[] | null> {
+  try {
+    const parsed: unknown = JSON.parse(await readFile(GAMES_FILE, "utf8"));
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Backloggd has no public API or RSS, its robots.txt disallows automated
@@ -69,7 +86,8 @@ const norm = (title: string) => title.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 /** Manual entries, with slug-only ones filled in from Backloggd. */
 async function manualGames(): Promise<Game[] | null> {
-  if (!Array.isArray(raw)) return null;
+  const raw = await readEntries();
+  if (!raw) return null;
 
   const pairs = raw.map((entry) => [entry, coerce(entry)] as const).filter(([, g]) => g !== null);
   return Promise.all(pairs.map(([entry, g]) => enrich(entry, g as Game)));
