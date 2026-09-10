@@ -15,14 +15,17 @@ export async function HalftoneImage({
   rows = 42,
   className,
   label,
+  invert = false,
 }: {
   src: string;
   cols?: number;
   rows?: number;
   className?: string;
   label?: string;
+  /** Draw the marks for light instead of dark, for use on an ink ground. */
+  invert?: boolean;
 }) {
-  const grid = await halftone(src, cols, rows);
+  const grid = await halftone(src, cols, rows, { invert });
   if (!grid) return <span className={`block bg-[--ink]/5 ${className ?? ""}`} />;
 
   const squares = [];

@@ -22,7 +22,7 @@ export async function halftone(
   src: string,
   cols: number,
   rows: number,
-  gamma: number = GAMMA,
+  { gamma = GAMMA, invert = false }: { gamma?: number; invert?: boolean } = {},
 ): Promise<Halftone | null> {
   try {
     const res = await fetch(src, {
@@ -46,7 +46,10 @@ export async function halftone(
     const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => data[a] - data[b]);
     const cells = new Array<number>(n);
     for (let rank = 0; rank < n; rank++) {
-      const darkness = 1 - rank / (n - 1);
+      // Inverted, the mark stands for light rather than dark - needed when the
+      // grid is drawn in paper on an ink ground, or the picture comes out as
+      // a photographic negative.
+      const darkness = invert ? rank / (n - 1) : 1 - rank / (n - 1);
       // Bias toward paper so the grid reads as marks on a ground, not a slab.
       cells[order[rank]] = Math.pow(darkness, gamma);
     }

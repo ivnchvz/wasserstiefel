@@ -237,26 +237,44 @@ export default async function Home() {
         </p>
       </header>
 
+      {nowGame && (
+        /*
+         * Being in a game is the most perishable thing on the page and the
+         * only state that is true right now, so it gets its own block rather
+         * than a line inside a section. Inverted to ink, which also flips the
+         * halftone to paper-on-black - the same grid read as a negative.
+         */
+        <a
+          href={nowGame.url}
+          className="group mb-16 -mt-8 block bg-ink px-6 py-6 text-paper transition-opacity hover:opacity-90 sm:px-8"
+        >
+          <span className="flex items-center gap-6">
+            <span className="w-[124px] shrink-0 border border-paper/25 p-[2px]">
+              <HalftoneImage
+                src={nowGame.cover}
+                cols={44}
+                rows={21}
+                label={nowGame.title}
+                className="w-full text-paper"
+                invert
+              />
+            </span>
+            <span className="min-w-0">
+              <span className="flex items-center gap-2 text-[10px] tracking-[0.24em] text-paper/70">
+                <span className="pulse-mark">▪</span> playing now
+              </span>
+              <span className="mt-2 block truncate text-xl font-medium tracking-[-0.02em] group-hover:underline sm:text-2xl">
+                {nowGame.title}
+              </span>
+              <span className="mt-1 block text-[10px] tracking-[0.14em] text-paper/50">steam</span>
+            </span>
+          </span>
+        </a>
+      )}
+
       <div className="flex flex-col gap-20">
         <Section index="01" title="now" href={fm ? `https://www.last.fm/user/${fm}` : undefined}>
           <div className="flex flex-col gap-10">
-            {nowGame && (
-              <a href={nowGame.url} className="group flex items-center gap-6">
-                <span className="w-[132px] shrink-0 border border-rule bg-paper p-[3px]">
-                  <Reveal src={nowGame.cover} alt={nowGame.title}>
-                    <HalftoneImage src={nowGame.cover} cols={44} rows={21} label={nowGame.title} className="w-full text-ink" />
-                  </Reveal>
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[10px] tracking-[0.18em] text-ink-soft">game</span>
-                  <span className="mt-1 block text-lg font-medium tracking-[-0.02em] group-hover:underline">
-                    {nowGame.title}
-                  </span>
-                  <span className="mt-2 block text-[10px] tracking-[0.14em] text-ink-soft">▪ playing now</span>
-                </span>
-              </a>
-            )}
-
             {track && (
               <a href={track.url ?? "#"} className="group flex items-start gap-7">
                 {track.artwork && (
@@ -275,11 +293,11 @@ export default async function Home() {
               </a>
             )}
 
-            {!nowGame && !track && (
+            {!track && (
               <p className="text-[11px] text-ink-soft">
                 {music.status === "unconfigured"
                   ? `not configured — ${music.message}`
-                  : "nothing playing right now"}
+                  : "nothing scrobbled yet"}
               </p>
             )}
           </div>
