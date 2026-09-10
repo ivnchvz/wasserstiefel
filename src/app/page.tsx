@@ -1,5 +1,5 @@
 import { getRecentMovies, getRecentReviews } from "@/lib/letterboxd";
-import { getRecentGames } from "@/lib/games";
+import { getRecentGames, getFinishedGames } from "@/lib/games";
 import { getNowPlayingGame } from "@/lib/steam";
 import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
 import { getLastTrack } from "@/lib/music";
@@ -211,10 +211,11 @@ function Section({
 }
 
 export default async function Home() {
-  const [movies, reviews, games, music, favFilms, favGames, nowGame] = await Promise.all([
+  const [movies, reviews, games, finished, music, favFilms, favGames, nowGame] = await Promise.all([
     getRecentMovies(6),
     getRecentReviews(4),
     getRecentGames(11),
+    getFinishedGames(12),
     getLastTrack(),
     getFavoriteFilms(),
     getFavoriteGames(),
@@ -395,70 +396,126 @@ export default async function Home() {
 
         <Section
           index="05"
-          title="recently played"
+          title="played"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={games}
         >
           {/*
-           * The most recent few get their covers shown, the rest stay a list.
-           * A full grid would bury the dates, and a full list would waste the
-           * artwork the halftone treatment is for.
+           * Radios rather than state: the panels are server-rendered and swap
+           * in CSS, so there is no flash of the wrong tab before hydration
+           * and it still works with scripting off.
            */}
-          {games.status === "ok" && (
-            <>
-              {/* Capped so three covers don't outweigh the films above, which
-                  sit six across and are the smaller cards. */}
-              <ul className="mb-10 grid grid-cols-3 gap-x-5 gap-y-6 sm:max-w-[34rem]">
-                {games.items.slice(0, 3).map((g) => (
-                  <li key={`card-${g.title}`}>
-                    <a href={g.url ?? "#"} className="group block">
-                      <span className="block border border-rule bg-paper p-[3px] transition-colors group-hover:border-ink">
-                        {g.cover ? (
-                          <Reveal src={g.cover} alt={g.title}>
-                            <HalftoneImage src={g.cover} cols={30} rows={42} label={g.title} className="w-full text-ink" />
-                          </Reveal>
-                        ) : (
-                          <span className="flex aspect-[2/3] items-center justify-center p-2 text-center text-[9px] text-ink-soft">
-                            {g.title}
-                          </span>
-                        )}
-                      </span>
-                      <span className="mt-3 block text-[11px] leading-snug tracking-[-0.01em] group-hover:underline">
-                        {g.title}
-                      </span>
-                      <span className="mt-1 flex flex-wrap items-baseline gap-x-3">
-                        <span className="text-[10px] tabular-nums text-ink-soft">{when(g.playedAt)}</span>
-                        {g.platform && (
-                          <span className="text-[10px] tracking-[0.12em] text-ink-soft">{g.platform}</span>
-                        )}
-                        <Rating value={g.rating} />
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
+          <div className="flex flex-wrap items-center gap-x-7">
+            <input type="radio" name="games-tab" id="games-recent" defaultChecked className="peer/recent sr-only" />
+            <input type="radio" name="games-tab" id="games-finished" className="peer/finished sr-only" />
 
-              <ul>
-                {games.items.slice(3).map((g) => (
-                  <li key={`${g.title}-${g.playedAt}`} className="border-b border-rule first:border-t">
-                    <a
-                      href={g.url ?? "#"}
-                      className="group grid grid-cols-[1fr_auto] items-baseline gap-4 py-3 sm:grid-cols-[1fr_7rem_3rem_4.5rem]"
-                    >
-                      <span className="truncate text-[13px] tracking-[-0.01em] group-hover:underline">{g.title}</span>
-                      <span className="hidden text-[10px] tracking-[0.12em] text-ink-soft sm:block">
-                        {g.platform ?? ""}
-                      </span>
-                      <span className="hidden sm:block">
-                        <Rating value={g.rating} />
-                      </span>
-                      <span className="text-right text-[10px] tabular-nums text-ink-soft">{when(g.playedAt)}</span>
-                    </a>
-                  </li>
+            <label htmlFor="games-recent" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/recent:border-ink peer-checked/recent:text-ink">
+              recent
+            </label>
+            <label htmlFor="games-finished" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/finished:border-ink peer-checked/finished:text-ink">
+              finished
+            </label>
+
+            <div className="mt-9 hidden w-full peer-checked/recent:block">
+            {/*
+             * The most recent few get their covers shown, the rest stay a list.
+             * A full grid would bury the dates, and a full list would waste the
+             * artwork the halftone treatment is for.
+             */}
+            {games.status === "ok" && (
+              <>
+                {/* Capped so three covers don't outweigh the films above, which
+                    sit six across and are the smaller cards. */}
+                <ul className="mb-10 grid grid-cols-3 gap-x-5 gap-y-6 sm:max-w-[34rem]">
+                  {games.items.slice(0, 3).map((g) => (
+                    <li key={`card-${g.title}`}>
+                      <a href={g.url ?? "#"} className="group block">
+                        <span className="block border border-rule bg-paper p-[3px] transition-colors group-hover:border-ink">
+                          {g.cover ? (
+                            <Reveal src={g.cover} alt={g.title}>
+                              <HalftoneImage src={g.cover} cols={30} rows={42} label={g.title} className="w-full text-ink" />
+                            </Reveal>
+                          ) : (
+                            <span className="flex aspect-[2/3] items-center justify-center p-2 text-center text-[9px] text-ink-soft">
+                              {g.title}
+                            </span>
+                          )}
+                        </span>
+                        <span className="mt-3 block text-[11px] leading-snug tracking-[-0.01em] group-hover:underline">
+                          {g.title}
+                        </span>
+                        <span className="mt-1 flex flex-wrap items-baseline gap-x-3">
+                          <span className="text-[10px] tabular-nums text-ink-soft">{when(g.playedAt)}</span>
+                          {g.platform && (
+                            <span className="text-[10px] tracking-[0.12em] text-ink-soft">{g.platform}</span>
+                          )}
+                          <Rating value={g.rating} />
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+
+                <ul>
+                  {games.items.slice(3).map((g) => (
+                    <li key={`${g.title}-${g.playedAt}`} className="border-b border-rule first:border-t">
+                      <a
+                        href={g.url ?? "#"}
+                        className="group grid grid-cols-[1fr_auto] items-baseline gap-4 py-3 sm:grid-cols-[1fr_7rem_3rem_4.5rem]"
+                      >
+                        <span className="truncate text-[13px] tracking-[-0.01em] group-hover:underline">{g.title}</span>
+                        <span className="hidden text-[10px] tracking-[0.12em] text-ink-soft sm:block">
+                          {g.platform ?? ""}
+                        </span>
+                        <span className="hidden sm:block">
+                          <Rating value={g.rating} />
+                        </span>
+                        <span className="text-right text-[10px] tabular-nums text-ink-soft">{when(g.playedAt)}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            </div>
+
+            <div className="mt-9 hidden w-full peer-checked/finished:block">
+              {finished.status === "ok" &&
+                (finished.items.length === 0 ? (
+                  <p className="max-w-[60ch] text-[11px] leading-relaxed text-ink-soft">
+                    nothing marked finished yet — add entries to src/data/games.json with
+                    <span className="text-ink"> &quot;status&quot;: &quot;completed&quot;</span>. a
+                    <span className="text-ink"> &quot;slug&quot;</span> from a backloggd game url is
+                    enough; the title, year and cover are fetched from it.
+                  </p>
+                ) : (
+                  <ul className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 lg:grid-cols-6">
+                    {finished.items.map((g) => (
+                      <li key={`fin-${g.title}`}>
+                        <a href={g.url ?? "#"} className="group block">
+                          <span className="block border border-rule bg-paper p-[3px] transition-colors group-hover:border-ink">
+                            {g.cover ? (
+                              <Reveal src={g.cover} alt={g.title}>
+                                <HalftoneImage src={g.cover} cols={30} rows={42} label={g.title} className="w-full text-ink" />
+                              </Reveal>
+                            ) : (
+                              <span className="flex aspect-[2/3] items-center justify-center p-2 text-center text-[9px] text-ink-soft">
+                                {g.title}
+                              </span>
+                            )}
+                          </span>
+                          <span className="mt-3 block text-[11px] leading-snug group-hover:underline">{g.title}</span>
+                          <span className="mt-1 flex items-center gap-2">
+                            {g.playedAt && <span className="text-[10px] tabular-nums text-ink-soft">{when(g.playedAt)}</span>}
+                            <Rating value={g.rating} />
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
                 ))}
-              </ul>
-            </>
-          )}
+            </div>
+          </div>
         </Section>
 
         <Section

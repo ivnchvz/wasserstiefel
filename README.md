@@ -84,4 +84,18 @@ Only `title` is required. On a title clash the manual entry wins, since those
 carry a rating and Steam never does. If the Steam key breaks, the manual list
 still renders on its own.
 
+**Finished games** are the entries in `games.json` marked
+`"status": "completed"`, shown under the *finished* tab. Every Backloggd page
+that lists a member's shelves is behind the wall, so this one is kept by hand -
+but an entry only needs the slug from a Backloggd game URL:
+
+```json
+[{ "slug": "outer-wilds", "status": "completed", "rating": 5, "playedAt": "2026-06-14" }]
+```
+
+Per-game pages *do* serve, so the title, year and cover art are read from
+`backloggd.com/games/<slug>/` and cached for a week. Anything written out by
+hand wins over the lookup, so a personal rating or platform is never
+overwritten.
+
 `BACKLOGGD_USERNAME` is used only to link out to the profile.

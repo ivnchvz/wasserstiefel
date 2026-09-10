@@ -1,5 +1,6 @@
 import type { Game, SectionResult } from "./types";
 import { getSteamGames } from "./steam";
+import { getGameBySlug } from "./backloggd";
 import raw from "@/data/games.json";
 
 /**
@@ -15,10 +16,13 @@ import raw from "@/data/games.json";
 function coerce(entry: unknown): Game | null {
   if (typeof entry !== "object" || entry === null) return null;
   const e = entry as Record<string, unknown>;
+  const slug = typeof e.slug === "string" ? e.slug.trim() : "";
   const title = typeof e.title === "string" ? e.title.trim() : "";
-  if (!title) return null;
+  // A slug-only entry is valid; its title arrives from the lookup.
+  if (!title && !slug) return null;
 
   const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  const status = str(e.status);
 
   return {
     title,
@@ -27,17 +31,55 @@ function coerce(entry: unknown): Game | null {
     playedAt: str(e.playedAt),
     url: str(e.url),
     cover: str(e.cover),
+    status:
+      status === "completed" || status === "playing" || status === "retired" || status === "shelved"
+        ? status
+        : null,
+  };
+}
+
+/** An entry may name a Backloggd slug instead of spelling everything out. */
+function slugOf(entry: unknown): string | null {
+  if (typeof entry !== "object" || entry === null) return null;
+  const s = (entry as Record<string, unknown>).slug;
+  return typeof s === "string" && s.trim() ? s.trim() : null;
+}
+
+/**
+ * Fills in whatever the entry didn't state from the game's Backloggd page.
+ * Anything written by hand wins, so a personal rating or platform is never
+ * overwritten by the lookup.
+ */
+async function enrich(entry: unknown, game: Game): Promise<Game> {
+  const slug = slugOf(entry);
+  if (!slug) return game;
+
+  const meta = await getGameBySlug(slug);
+  if (!meta) return { ...game, url: game.url ?? `https://backloggd.com/games/${slug}/` };
+
+  return {
+    ...game,
+    title: game.title || meta.title,
+    cover: game.cover ?? meta.cover,
+    url: game.url ?? meta.url,
   };
 }
 
 const norm = (title: string) => title.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-export async function getRecentGames(limit = 6): Promise<SectionResult<Game>> {
-  if (!Array.isArray(raw)) {
-    return { status: "error", message: "src/data/games.json must contain an array" };
-  }
+/** Manual entries, with slug-only ones filled in from Backloggd. */
+async function manualGames(): Promise<Game[] | null> {
+  if (!Array.isArray(raw)) return null;
 
-  const manual = raw.map(coerce).filter((g): g is Game => g !== null);
+  const pairs = raw.map((entry) => [entry, coerce(entry)] as const).filter(([, g]) => g !== null);
+  return Promise.all(pairs.map(([entry, g]) => enrich(entry, g as Game)));
+}
+
+const byNewest = (a: Game, b: Game) => (b.playedAt ?? "").localeCompare(a.playedAt ?? "");
+
+export async function getRecentGames(limit = 6): Promise<SectionResult<Game>> {
+  const manual = await manualGames();
+  if (!manual) return { status: "error", message: "src/data/games.json must contain an array" };
 
   let steam: Game[] = [];
   try {
@@ -53,10 +95,21 @@ export async function getRecentGames(limit = 6): Promise<SectionResult<Game>> {
   const claimed = new Set(manual.map((g) => norm(g.title)));
   const merged = [...manual, ...steam.filter((g) => !claimed.has(norm(g.title)))];
 
+  return { status: "ok", items: merged.sort(byNewest).slice(0, limit) };
+}
+
+/**
+ * Finishing a game is a judgement Steam can't make - it only knows playtime -
+ * and every Backloggd page that lists a member's shelves sits behind the
+ * proof-of-work wall. So this reads the entries marked completed in
+ * src/data/games.json, which may name nothing but a slug.
+ */
+export async function getFinishedGames(limit = 12): Promise<SectionResult<Game>> {
+  const manual = await manualGames();
+  if (!manual) return { status: "error", message: "src/data/games.json must contain an array" };
+
   return {
     status: "ok",
-    items: merged
-      .sort((a, b) => (b.playedAt ?? "").localeCompare(a.playedAt ?? ""))
-      .slice(0, limit),
+    items: manual.filter((g) => g.status === "completed").sort(byNewest).slice(0, limit),
   };
 }

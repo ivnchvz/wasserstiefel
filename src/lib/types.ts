@@ -24,6 +24,8 @@ export type Game = {
   playedAt: string | null;
   url: string | null;
   cover: string | null;
+  /** Backloggd-style shelf, for the finished list. */
+  status: "completed" | "playing" | "retired" | "shelved" | null;
 };
 
 export type Track = {

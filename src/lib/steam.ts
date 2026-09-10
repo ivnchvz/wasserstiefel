@@ -38,6 +38,7 @@ export function mapOwnedGames(games: OwnedGame[], limit: number): Game[] {
       // Portrait library art rather than the landscape header, so games sit
       // in the same 2:3 grid as the film posters and the Backloggd covers.
       cover: `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`,
+      status: null, // Steam has no notion of finishing a game
     }));
 }
 
