@@ -47,9 +47,11 @@ export function Reveal({
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const [hovered, setHovered] = useState(false);
   const [centred, setCentred] = useState(false);
   const [loadIt, setLoadIt] = useState(false);
+  const [ready, setReady] = useState(false);
   const canHover = useMediaQuery("(hover: hover)", true);
   const instant = useMediaQuery("(prefers-reduced-motion: reduce)", false);
 
@@ -74,7 +76,41 @@ export function Reveal({
     return () => io.disconnect();
   }, [canHover]);
 
-  const visible = (canHover && hovered) || centred;
+  const wanted = (canHover && hovered) || centred;
+  const visible = wanted && ready;
+
+  /*
+   * On the very first reveal the image element does not exist yet, and an
+   * element that was not in the DOM a frame ago has nothing to transition
+   * from - so it used to appear instantly the first time and animate only
+   * from the second. It now mounts hidden and is not shown until it has
+   * decoded and a frame has been painted at zero, which gives the transition
+   * a real starting point. Waiting on decode also means the fade begins when
+   * the picture is genuinely ready to paint, rather than racing the network.
+   */
+  useEffect(() => {
+    if (!loadIt) return;
+    const img = imgRef.current;
+    if (!img) return;
+
+    let cancelled = false;
+    const arm = () => {
+      // Two frames: one to paint the hidden state, one to change off it.
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          if (!cancelled) setReady(true);
+        }),
+      );
+    };
+
+    // decode() settles when the bitmap can be painted; on failure show it
+    // anyway rather than leaving the reveal permanently stuck.
+    void (img.decode ? img.decode().then(arm, arm) : Promise.resolve().then(arm));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadIt]);
 
   const soft = !instant;
 
@@ -130,6 +166,7 @@ export function Reveal({
       {loadIt && (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
+          ref={imgRef}
           src={src}
           alt={alt}
           decoding="async"
