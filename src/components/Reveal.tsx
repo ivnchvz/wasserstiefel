@@ -76,6 +76,25 @@ export function Reveal({
 
   const visible = (canHover && hovered) || centred;
 
+  const ms = instant ? 1 : 520;
+  const soft = !instant;
+
+  // The two layers hand off rather than fading in step. If both sit at part
+  // opacity together the paper ground shows through and the picture goes
+  // milky, so the incoming image rises fast (ease-out) while the halftone
+  // holds and then drops late (ease-in). Combined cover stays high the whole
+  // way, and no paper is ever visible between them.
+  // A CSS transition applies the same curve in both directions, so the pair is
+  // swapped by state: whichever layer is arriving rises fast, whichever is
+  // leaving holds and drops late. Without this the exit mirrors the entrance
+  // and opens the very gap the entrance was tuned to avoid.
+  const RISE = "cubic-bezier(0.22, 0.61, 0.36, 1)";
+  const HOLD = "cubic-bezier(0.55, 0.055, 0.675, 0.19)";
+  const arriving = visible ? RISE : HOLD;
+  const leaving = visible ? HOLD : RISE;
+  const move = (specs: [string, string][]) =>
+    specs.map(([prop, ease]) => `${prop} ${ms}ms ${ease}`).join(", ");
+
   return (
     <span
       ref={ref}
@@ -86,7 +105,26 @@ export function Reveal({
       }}
       onPointerLeave={() => setHovered(false)}
     >
-      {children}
+      {/*
+       * The halftone dissolves rather than simply sitting underneath. Its
+       * squares are high-frequency and high-contrast, so cross-fading against
+       * a photograph on its own reads as two images at once; blurring the
+       * grid out as it goes lets the dots melt instead of ghosting.
+       */}
+      <span
+        style={{
+          display: "block",
+          opacity: visible ? 0 : 1,
+          filter: soft && visible ? "blur(3px)" : "blur(0px)",
+          transition: move([
+            ["opacity", leaving],
+            ["filter", RISE],
+          ]),
+          willChange: "opacity, filter",
+        }}
+      >
+        {children}
+      </span>
       {loadIt && (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
@@ -100,8 +138,17 @@ export function Reveal({
             height: "100%",
             objectFit: "cover",
             opacity: visible ? 1 : 0,
+            // Arrives slightly soft and large, then settles - the picture
+            // pulls into focus as the grid lets go.
+            filter: soft && !visible ? "blur(5px)" : "blur(0px)",
+            transform: soft && !visible ? "scale(1.03)" : "scale(1)",
+            transition: move([
+              ["opacity", arriving],
+              ["filter", RISE],
+              ["transform", RISE],
+            ]),
+            willChange: "opacity, filter, transform",
             pointerEvents: "none",
-            transition: `opacity ${instant ? 1 : 320}ms ease`,
           }}
         />
       )}
