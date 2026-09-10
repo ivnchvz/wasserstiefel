@@ -10,18 +10,26 @@ type Result = {
   note: string | null;
   slug?: string;
   id?: number;
+  artist?: string;
+  cover?: string | null;
 };
 
 type Entry = Record<string, unknown>;
 
 export type LibraryConfig = {
-  kind: "games" | "series";
+  kind: "games" | "series" | "albums";
   heading: string;
   placeholder: string;
+  /** Shelves to pick from. Empty when the entry is rated rather than shelved. */
   statuses: readonly string[];
   /** Which field carries the date, and which identifies an entry. */
-  dateField: "playedAt" | "watchedAt";
+  dateField: "playedAt" | "watchedAt" | "ratedAt";
   idField: "slug" | "id";
+  /**
+   * Albums aren't shelved, they're scored - so their search results offer a
+   * rating straight away instead of a status.
+   */
+  mode?: "status" | "rating";
 };
 
 const CHIP =
@@ -31,7 +39,7 @@ const FIELD = "border border-rule bg-transparent px-2 py-1 text-[10px] outline-n
 const today = () => new Date().toISOString().slice(0, 10);
 
 export function AdminLibrary({ config }: { config: LibraryConfig }) {
-  const { kind, heading, placeholder, statuses, dateField, idField } = config;
+  const { kind, heading, placeholder, statuses, dateField, idField, mode = "status" } = config;
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Result[]>([]);
@@ -100,7 +108,17 @@ export function AdminLibrary({ config }: { config: LibraryConfig }) {
   const statusOf = (k: string) =>
     entries.find((e) => String(e[idField] ?? "").toLowerCase() === k.toLowerCase())?.status as string | undefined;
 
-  const identify = (r: Result) => (idField === "slug" ? { slug: r.slug } : { id: r.id });
+  const identify = (r: Result) => ({
+    ...(idField === "slug" ? { slug: r.slug } : { id: r.id }),
+    title: r.title,
+    // Albums keep their artist, year and artwork, so the page needs no lookup.
+    ...(r.artist ? { artist: r.artist } : {}),
+    ...(r.year ? { year: r.year } : {}),
+    ...(r.cover ? { cover: r.cover } : {}),
+  });
+
+  const ratingOf = (k: string) =>
+    entries.find((e) => String(e[idField] ?? "").toLowerCase() === k.toLowerCase())?.rating as number | undefined;
 
   return (
     <section>
@@ -132,20 +150,36 @@ export function AdminLibrary({ config }: { config: LibraryConfig }) {
                 <span className="mt-0.5 block truncate text-[10px] tracking-[0.1em] text-ink-soft">
                   {r.note}
                   {current && <span className="text-ink"> · {current}</span>}
+                  {mode === "rating" && ratingOf(r.key) !== undefined && (
+                    <span className="text-ink"> · rated {ratingOf(r.key)}</span>
+                  )}
                 </span>
               </span>
               <span className="flex shrink-0 flex-wrap gap-1">
-                {statuses.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    disabled={busy === r.key.toLowerCase()}
-                    onClick={() => upsert({ ...identify(r), title: r.title, status: s, [dateField]: today() })}
-                    className={`${CHIP} ${current === s ? "border-ink text-ink" : ""}`}
-                  >
-                    {s}
-                  </button>
-                ))}
+                {mode === "rating"
+                  ? [1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        disabled={busy === r.key.toLowerCase()}
+                        onClick={() => upsert({ ...identify(r), rating: n, [dateField]: today() })}
+                        className={`${CHIP} ${(ratingOf(r.key) ?? 0) >= n ? "border-ink text-ink" : ""}`}
+                        aria-label={`${n} out of 5`}
+                      >
+                        {n}
+                      </button>
+                    ))
+                  : statuses.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        disabled={busy === r.key.toLowerCase()}
+                        onClick={() => upsert({ ...identify(r), status: s, [dateField]: today() })}
+                        className={`${CHIP} ${current === s ? "border-ink text-ink" : ""}`}
+                      >
+                        {s}
+                      </button>
+                    ))}
               </span>
             </li>
           );
@@ -163,6 +197,7 @@ export function AdminLibrary({ config }: { config: LibraryConfig }) {
                 {String(e.title ?? e[idField])}
               </span>
 
+              {statuses.length > 0 && (
               <select
                 value={(e.status as string) ?? ""}
                 onChange={(ev) => upsert({ ...e, status: ev.target.value })}
@@ -175,6 +210,7 @@ export function AdminLibrary({ config }: { config: LibraryConfig }) {
                   </option>
                 ))}
               </select>
+              )}
 
               <input
                 type="date"

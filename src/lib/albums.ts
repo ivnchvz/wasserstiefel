@@ -5,6 +5,7 @@ import { findAlbumArt } from "./albumArt";
 import type { SectionResult } from "./types";
 
 export const RYM_FILE = path.join(process.cwd(), "src", "data", "rym-ratings.csv");
+export const ALBUMS_FILE = path.join(process.cwd(), "src", "data", "albums.json");
 
 export type Album = {
   artist: string;
@@ -31,19 +32,17 @@ function pick(headers: string[], ...candidates: string[]): number {
  * come instead from the export RYM offers its own members, dropped into
  * src/data/rym-ratings.csv.
  */
-export async function getRatedAlbums(limit = 12): Promise<SectionResult<Album>> {
+/** Reads the RYM export, if one has been saved. */
+async function fromExport(): Promise<Album[] | null> {
   let text: string;
   try {
     text = await readFile(RYM_FILE, "utf8");
   } catch {
-    return {
-      status: "unconfigured",
-      message: "export your ratings from rateyourmusic.com/user_albums_export/ and save them as src/data/rym-ratings.csv",
-    };
+    return null;
   }
 
   const rows = parseCsv(text);
-  if (rows.length < 2) return { status: "ok", items: [] };
+  if (rows.length < 2) return [];
 
   const [headers, ...body] = rows;
   const iTitle = pick(headers, "title", "album", "release");
@@ -52,10 +51,7 @@ export async function getRatedAlbums(limit = 12): Promise<SectionResult<Album>> 
   const iLast = pick(headers, "lastname", "artistlastname");
   const iArtist = pick(headers, "artist", "artistname");
   const iYear = pick(headers, "releasedate", "year", "released");
-
-  if (iTitle < 0 || iRating < 0) {
-    return { status: "error", message: `unrecognised export columns: ${headers.slice(0, 8).join(", ")}` };
-  }
+  if (iTitle < 0 || iRating < 0) return [];
 
   const albums: Album[] = [];
   for (const row of body) {
@@ -67,7 +63,7 @@ export async function getRatedAlbums(limit = 12): Promise<SectionResult<Album>> 
     const artist =
       iArtist >= 0
         ? (row[iArtist] ?? "").trim()
-        : [row[iFirst] ?? "", row[iLast] ?? ""].map((s) => s.trim()).filter(Boolean).join(" ");
+        : [row[iFirst] ?? "", row[iLast] ?? ""].map((v) => v.trim()).filter(Boolean).join(" ");
 
     albums.push({
       artist,
@@ -77,12 +73,63 @@ export async function getRatedAlbums(limit = 12): Promise<SectionResult<Album>> 
       cover: null,
     });
   }
+  return albums;
+}
+
+/** Albums logged since, from /admin. These already carry their artwork. */
+async function fromAdmin(): Promise<Album[]> {
+  try {
+    const parsed: unknown = JSON.parse(await readFile(ALBUMS_FILE, "utf8"));
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map((e: Record<string, unknown>) => {
+        const title = typeof e.title === "string" ? e.title.trim() : "";
+        const rating = typeof e.rating === "number" ? e.rating : NaN;
+        if (!title || !Number.isFinite(rating) || rating <= 0) return null;
+        return {
+          artist: typeof e.artist === "string" ? e.artist.trim() : "",
+          title,
+          year: typeof e.year === "string" ? e.year : null,
+          rating,
+          cover: typeof e.cover === "string" ? e.cover : null,
+        } satisfies Album;
+      })
+      .filter((a): a is Album => a !== null);
+  } catch {
+    return [];
+  }
+}
+
+const keyOf = (a: Album) => `${a.artist} ${a.title}`.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+/**
+ * RateYourMusic prohibits automated access in its robots.txt and puts the site
+ * behind a Cloudflare challenge, so ratings can't be read from a profile.
+ * They come from the export RYM offers its own members, plus anything logged
+ * since from /admin - which wins on a clash, being the later judgement.
+ */
+export async function getRatedAlbums(limit = 12): Promise<SectionResult<Album>> {
+  const exported = await fromExport();
+  const logged = await fromAdmin();
+
+  if (exported === null && logged.length === 0) {
+    return {
+      status: "unconfigured",
+      message:
+        "log albums from /admin, or export your ratings from rateyourmusic.com/user_albums_export/ and save them as src/data/rym-ratings.csv",
+    };
+  }
+
+  const claimed = new Set(logged.map(keyOf));
+  const merged = [...logged, ...(exported ?? []).filter((a) => !claimed.has(keyOf(a)))];
 
   // Highest rated first, and only look up art for the ones actually shown.
-  const top = albums.sort((a, b) => b.rating - a.rating).slice(0, limit);
-  const withArt = await Promise.all(
-    top.map(async (a) => ({ ...a, cover: await findAlbumArt(a.artist, a.title) })),
-  );
-
-  return { status: "ok", items: withArt };
+  const top = merged.sort((a, b) => b.rating - a.rating).slice(0, limit);
+  return {
+    status: "ok",
+    items: await Promise.all(
+      top.map(async (a) => (a.cover ? a : { ...a, cover: await findAlbumArt(a.artist, a.title) })),
+    ),
+  };
 }

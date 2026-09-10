@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { searchGames } from "@/lib/gameSearch";
 import { searchSeries } from "@/lib/seriesSearch";
+import { searchAlbums } from "@/lib/albumSearch";
 import { adminGate } from "@/lib/adminGate";
 
 export async function GET(request: Request) {
@@ -9,6 +10,22 @@ export async function GET(request: Request) {
 
   const params = new URL(request.url).searchParams;
   const q = params.get("q") ?? "";
+
+  if (params.get("kind") === "albums") {
+    const hits = await searchAlbums(q);
+    return NextResponse.json({
+      results: hits.map((a) => ({
+        key: String(a.id),
+        id: a.id,
+        title: a.title,
+        artist: a.artist,
+        year: a.year,
+        image: a.cover,
+        cover: a.cover,
+        note: a.artist,
+      })),
+    });
+  }
 
   if (params.get("kind") === "series") {
     const hits = await searchSeries(q);

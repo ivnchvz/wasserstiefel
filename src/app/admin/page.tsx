@@ -25,6 +25,16 @@ const SERIES: LibraryConfig = {
   idField: "id",
 };
 
+const ALBUMS: LibraryConfig = {
+  kind: "albums",
+  heading: "albums",
+  placeholder: "search itunes…",
+  statuses: [],
+  dateField: "ratedAt",
+  idField: "id",
+  mode: "rating",
+};
+
 export default function AdminPage() {
   return (
     <main className="mx-auto w-full max-w-4xl px-6 py-16 sm:px-10">
@@ -38,6 +48,7 @@ export default function AdminPage() {
       <div className="flex flex-col gap-20">
         <AdminLibrary config={GAMES} />
         <AdminLibrary config={SERIES} />
+        <AdminLibrary config={ALBUMS} />
       </div>
     </main>
   );

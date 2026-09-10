@@ -123,9 +123,17 @@ RateYourMusic can't be read automatically: its robots.txt opens by prohibiting
 service without express permission", and profiles sit behind a Cloudflare
 challenge — `/~user` answers 403.
 
-RYM does, however, let members export their own ratings. Download yours from
-**rateyourmusic.com/user_albums_export/** and save it as
-`src/data/rym-ratings.csv`; the section reads it directly, no reformatting.
+Albums come from two places, merged:
+
+- **`src/data/albums.json`** - logged from `/admin`, searching the iTunes
+  catalogue. Rate one out of five and it's stored with its artwork.
+- **`src/data/rym-ratings.csv`** - the back catalogue. RYM lets members export
+  their own ratings: download yours from
+  **rateyourmusic.com/user_albums_export/** and save it under that name. The
+  section reads it directly, no reformatting.
+
+An album logged from admin wins over the same album in the export, being the
+later judgement. Neither is required - the section works with either alone.
 
 Columns are matched by header name rather than position, so export changes are
 survivable, and RYM's 1-10 half-star scale is halved to match the star ratings
