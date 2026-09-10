@@ -1,53 +1,71 @@
 import { getRecentMovies } from "@/lib/letterboxd";
 import { getRecentGames } from "@/lib/games";
 import { getLastTrack } from "@/lib/music";
+import { HalftoneImage, AsciiImage } from "@/components/Halftone";
 import type { SectionResult } from "@/lib/types";
 
-// Sections revalidate on their own clocks; the shell is static.
 export const revalidate = 60;
 
-function stars(rating: number | null): string | null {
-  if (rating === null) return null;
-  return "★".repeat(Math.floor(rating)) + (rating % 1 >= 0.5 ? "½" : "");
-}
-
+/** Crouwel's exhibition dates read 30.03-03.07.11; dates here follow suit. */
 function when(date: string | null): string | null {
   if (!date) return null;
-  // A bare YYYY-MM-DD parses as UTC midnight, which renders as the previous
-  // day anywhere west of Greenwich - pin those to local time instead.
   const local = /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : date;
   const d = new Date(local);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${String(d.getFullYear()).slice(2)}`;
+}
+
+/** Five cells, filled by score - the grid logic applied to a rating. */
+function Rating({ value }: { value: number | null }) {
+  if (value === null) return null; // Steam has no score; an em-dash per row is just noise
+  return (
+    <svg viewBox="0 0 29 5" className="h-[7px] w-[41px]" aria-label={`${value} out of 5`} role="img">
+      {Array.from({ length: 5 }, (_, i) => {
+        const fill = Math.max(0, Math.min(1, value - i));
+        return (
+          <g key={i}>
+            <rect x={i * 6} y={0} width={5} height={5} fill="none" stroke="currentColor" strokeWidth={0.6} opacity={0.35} />
+            {fill > 0 && <rect x={i * 6} y={0} width={5 * fill} height={5} fill="currentColor" />}
+          </g>
+        );
+      })}
+    </svg>
+  );
 }
 
 function Section({
+  index,
   title,
   href,
   result,
   children,
 }: {
+  index: string;
   title: string;
   href?: string;
   result: SectionResult<unknown>;
   children: React.ReactNode;
 }) {
   return (
-    <section className="mb-14">
-      <h2 className="mb-4 flex items-baseline gap-3 text-sm font-medium uppercase tracking-widest text-neutral-400">
-        {title}
+    <section className="border-t border-rule pt-4">
+      <div className="mb-8 flex items-baseline gap-4">
+        <span className="text-[10px] tabular-nums text-ink-soft">{index}</span>
+        <h2 className="text-[11px] lowercase tracking-[0.28em] text-ink">{title}</h2>
         {href && (
-          <a href={href} className="text-xs normal-case tracking-normal text-neutral-600 hover:text-neutral-300">
-            profile ↗
+          <a
+            href={href}
+            className="ml-auto text-[10px] tracking-[0.1em] text-ink-soft underline-offset-4 hover:text-ink hover:underline"
+          >
+            index ↗
           </a>
         )}
-      </h2>
+      </div>
       {result.status === "ok" ? (
         children
       ) : (
-        <p className="text-sm text-neutral-500">
-          {result.status === "unconfigured" ? "Not set up yet — " : "Unavailable — "}
-          <span className="text-neutral-600">{result.message}</span>
+        <p className="pb-10 text-[11px] leading-relaxed text-ink-soft">
+          {result.status === "unconfigured" ? "not configured" : "unavailable"} — {result.message}
         </p>
       )}
     </section>
@@ -55,101 +73,119 @@ function Section({
 }
 
 export default async function Home() {
-  // Fetched together so a slow upstream doesn't serialise the others.
   const [movies, games, music] = await Promise.all([
     getRecentMovies(6),
-    getRecentGames(6),
+    getRecentGames(8),
     getLastTrack(),
   ]);
 
-  const letterboxdUser = process.env.LETTERBOXD_USERNAME;
-  const backloggdUser = process.env.BACKLOGGD_USERNAME;
+  const lb = process.env.LETTERBOXD_USERNAME;
+  const bl = process.env.BACKLOGGD_USERNAME;
+  const fm = process.env.LASTFM_USERNAME;
   const track = music.status === "ok" ? music.items[0] : undefined;
 
   return (
-    <main className="mx-auto min-h-screen max-w-3xl bg-neutral-950 px-6 py-20 text-neutral-100">
-      <header className="mb-16">
-        <h1 className="text-2xl font-semibold tracking-tight">wasserstiefel</h1>
-        <p className="mt-2 text-sm text-neutral-500">What I&apos;ve been watching, playing and listening to.</p>
+    <main className="mx-auto w-full max-w-5xl px-6 py-16 sm:px-10 sm:py-24">
+      <header className="mb-20 flex flex-wrap items-end justify-between gap-6 border-b border-rule pb-5">
+        <h1 className="text-3xl font-medium lowercase tracking-[-0.045em] sm:text-4xl">wasserstiefel</h1>
+        <p className="text-[10px] leading-[1.7] tracking-[0.12em] text-ink-soft">
+          watched · played · heard
+          <br />
+          an index, updated automatically
+        </p>
       </header>
 
-      <Section
-        title="Now playing"
-        href={process.env.LASTFM_USERNAME ? `https://www.last.fm/user/${process.env.LASTFM_USERNAME}` : undefined}
-        result={music}
-      >
-        {track ? (
-          <a href={track.url ?? "#"} className="group flex items-center gap-4">
-            {track.artwork && (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={track.artwork} alt="" className="h-16 w-16 rounded object-cover" />
-            )}
-            <span>
-              <span className="block font-medium group-hover:underline">{track.title}</span>
-              <span className="block text-sm text-neutral-400">{track.artist}</span>
-              <span className="block text-xs text-neutral-600">
-                {track.nowPlaying ? "● playing now" : when(track.playedAt) ?? "recently"}
+      <div className="flex flex-col gap-20">
+        <Section index="01" title="now playing" href={fm ? `https://www.last.fm/user/${fm}` : undefined} result={music}>
+          {track ? (
+            <a href={track.url ?? "#"} className="group flex items-start gap-7">
+              {track.artwork && (
+                <AsciiImage
+                  src={track.artwork}
+                  cols={26}
+                  rows={26}
+                  label={`${track.title} cover`}
+                  className="shrink-0 text-[6px] text-ink"
+                />
+              )}
+              <span className="min-w-0 pt-1">
+                <span className="block text-lg font-medium tracking-[-0.02em] group-hover:underline">
+                  {track.title}
+                </span>
+                <span className="mt-1 block text-[12px] text-ink-soft">{track.artist}</span>
+                {track.album && <span className="mt-3 block text-[10px] text-ink-soft">{track.album}</span>}
+                <span className="mt-4 block text-[10px] tracking-[0.14em] text-ink-soft">
+                  {track.nowPlaying ? "▪ playing now" : when(track.playedAt) ?? "recently"}
+                </span>
               </span>
-            </span>
-          </a>
-        ) : (
-          <p className="text-sm text-neutral-500">Nothing scrobbled yet.</p>
-        )}
-      </Section>
+            </a>
+          ) : (
+            <p className="text-[11px] text-ink-soft">nothing scrobbled yet</p>
+          )}
+        </Section>
 
-      <Section
-        title="Recently watched"
-        href={letterboxdUser ? `https://letterboxd.com/${letterboxdUser}/films/diary/` : undefined}
-        result={movies}
-      >
-        <ul className="grid grid-cols-3 gap-4 sm:grid-cols-6">
-          {movies.status === "ok" &&
-            movies.items.map((m) => (
-              <li key={m.url}>
-                <a href={m.url} className="group block">
-                  {m.poster ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={m.poster}
-                      alt={m.title}
-                      className="aspect-[2/3] w-full rounded object-cover transition group-hover:opacity-80"
-                    />
-                  ) : (
-                    <span className="flex aspect-[2/3] w-full items-center justify-center rounded bg-neutral-900 p-2 text-center text-xs text-neutral-500">
+        <Section
+          index="02"
+          title="recently watched"
+          href={lb ? `https://letterboxd.com/${lb}/films/diary/` : undefined}
+          result={movies}
+        >
+          <ul className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-6">
+            {movies.status === "ok" &&
+              movies.items.map((m) => (
+                <li key={m.url}>
+                  <a href={m.url} className="group block">
+                    <span className="block border border-rule bg-paper p-[3px] transition-colors group-hover:border-ink">
+                      {m.poster ? (
+                        <HalftoneImage src={m.poster} cols={30} rows={42} label={m.title} className="w-full text-ink" />
+                      ) : (
+                        <span className="flex aspect-[2/3] items-center justify-center p-2 text-center text-[9px] text-ink-soft">
+                          {m.title}
+                        </span>
+                      )}
+                    </span>
+                    <span className="mt-3 block text-[11px] leading-snug tracking-[-0.01em] group-hover:underline">
                       {m.title}
                     </span>
-                  )}
-                  <span className="mt-1.5 block truncate text-xs text-neutral-400" title={m.title}>
-                    {m.title}
-                  </span>
-                  <span className="block text-xs text-amber-500">{stars(m.rating) ?? " "}</span>
-                </a>
-              </li>
-            ))}
-        </ul>
-      </Section>
+                    <span className="mt-1 flex items-center gap-2">
+                      <span className="text-[10px] tabular-nums text-ink-soft">{m.year ?? "—"}</span>
+                      <Rating value={m.rating} />
+                    </span>
+                  </a>
+                </li>
+              ))}
+          </ul>
+        </Section>
 
-      <Section
-        title="Recently played"
-        href={backloggdUser ? `https://backloggd.com/u/${backloggdUser}/` : undefined}
-        result={games}
-      >
-        <ul className="divide-y divide-neutral-900 border-y border-neutral-900">
-          {games.status === "ok" &&
-            games.items.map((g) => (
-              <li key={g.title} className="flex items-baseline justify-between gap-4 py-3">
-                <a href={g.url ?? "#"} className="truncate font-medium hover:underline">
-                  {g.title}
-                </a>
-                <span className="flex shrink-0 items-baseline gap-3 text-xs text-neutral-500">
-                  {g.platform && <span>{g.platform}</span>}
-                  <span className="text-amber-500">{stars(g.rating)}</span>
-                  <span>{when(g.playedAt)}</span>
-                </span>
-              </li>
-            ))}
-        </ul>
-      </Section>
+        <Section
+          index="03"
+          title="recently played"
+          href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
+          result={games}
+        >
+          <ul>
+            {games.status === "ok" &&
+              games.items.map((g) => (
+                <li key={`${g.title}-${g.playedAt}`} className="border-b border-rule first:border-t">
+                  <a href={g.url ?? "#"} className="group grid grid-cols-[1fr_auto] items-baseline gap-4 py-3 sm:grid-cols-[1fr_7rem_3rem_4.5rem]">
+                    <span className="truncate text-[13px] tracking-[-0.01em] group-hover:underline">{g.title}</span>
+                    <span className="hidden text-[10px] tracking-[0.12em] text-ink-soft sm:block">
+                      {g.platform ?? ""}
+                    </span>
+                    <span className="hidden sm:block">
+                      <Rating value={g.rating} />
+                    </span>
+                    <span className="text-right text-[10px] tabular-nums text-ink-soft">{when(g.playedAt)}</span>
+                  </a>
+                </li>
+              ))}
+          </ul>
+        </Section>
+      </div>
+
+      <footer className="mt-24 border-t border-rule pt-5 text-[10px] tracking-[0.12em] text-ink-soft">
+        posters rendered as halftone grids from source artwork
+      </footer>
     </main>
   );
 }

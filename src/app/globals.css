@@ -1,19 +1,39 @@
 @import "tailwindcss";
 
+/*
+ * A paper ground with ink on it. The whole reference set - Crouwel's halftone
+ * poster, the dot-matrix specimen, the ASCII plates - lives in light, so the
+ * site commits to it rather than carrying a dark variant.
+ */
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --paper: #e8e6e1;
+  --ink: #14140f;
+  --ink-soft: #6b6a63;
+  --rule: #c9c6bf;
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --font-mono: var(--font-plex-mono);
+}
+
+html {
+  background: var(--paper);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  font-variant-ligatures: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
 }
