@@ -11,6 +11,7 @@ import { Reveal } from "@/components/Reveal";
 import { NowListening } from "@/components/NowListening";
 import { ReelTile } from "@/components/ReelTile";
 import { PlaylistEmbed } from "@/components/PlaylistEmbed";
+import { Intro } from "@/components/Intro";
 import { NowPlayingBanner } from "@/components/NowPlayingBanner";
 import { halftone } from "@/lib/halftone";
 import type { NowPlayingPayload } from "./api/now-playing/route";
@@ -32,18 +33,22 @@ function when(date: string | null): string | null {
 /** Five cells, filled by score - the grid logic applied to a rating. */
 function Rating({ value }: { value: number | null }) {
   if (value === null) return null; // Steam has no score; an em-dash per row is just noise
+
+  const full = Math.floor(value);
+  const half = value - full >= 0.5;
+  const empty = Math.max(0, 5 - full - (half ? 1 : 0));
+
   return (
-    <svg viewBox="0 0 29 5" className="h-[7px] w-[41px]" aria-label={`${value} out of 5`} role="img">
-      {Array.from({ length: 5 }, (_, i) => {
-        const fill = Math.max(0, Math.min(1, value - i));
-        return (
-          <g key={i}>
-            <rect x={i * 6} y={0} width={5} height={5} fill="none" stroke="currentColor" strokeWidth={0.6} opacity={0.35} />
-            {fill > 0 && <rect x={i * 6} y={0} width={5 * fill} height={5} fill="currentColor" />}
-          </g>
-        );
-      })}
-    </svg>
+    <span className="inline-flex items-center gap-[3px] align-middle" role="img" aria-label={`${value} out of 5`}>
+      {Array.from({ length: full }, (_, i) => (
+        <span key={`f${i}`} className="block h-[7px] w-[7px] bg-current" />
+      ))}
+      {/* A real ½ reads as half a rating; a half-filled square just looks misdrawn. */}
+      {half && <span className="text-[12px] leading-none">½</span>}
+      {Array.from({ length: empty }, (_, i) => (
+        <span key={`e${i}`} className="block h-[7px] w-[7px] border border-current opacity-40" />
+      ))}
+    </span>
   );
 }
 
@@ -262,6 +267,11 @@ export default async function Home() {
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-16 sm:px-10 sm:py-24">
+      <noscript>
+        <style>{`.intro-overlay{display:none}`}</style>
+      </noscript>
+      <Intro src="/intro/cosmos.mp4" caption="I rescued and injured bird, and once it healed it flew away" />
+
       <header className="mb-20 flex flex-wrap items-end justify-between gap-6 border-b border-rule pb-5">
         <h1 className="text-3xl font-medium lowercase tracking-[-0.045em] sm:text-4xl">wasserstiefel</h1>
         <p className="text-[10px] leading-[1.7] tracking-[0.12em] text-ink-soft">

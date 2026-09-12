@@ -66,3 +66,14 @@ body {
     animation: none;
   }
 }
+
+/*
+ * The intro is in the server-rendered HTML so it's there in the first paint.
+ * These hide it before any of it shows: with scripting off nothing could
+ * dismiss it, and reduced motion asks for no autoplaying video.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .intro-overlay {
+    display: none;
+  }
+}

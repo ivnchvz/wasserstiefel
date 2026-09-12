@@ -1,28 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useMediaQuery } from "./useMediaQuery";
 
-/**
- * A media query is external state, so it is subscribed to rather than copied
- * into state in an effect - which also means it reacts to the user plugging
- * in a mouse or turning on reduced motion mid-session.
- */
-function useMediaQuery(query: string, serverFallback: boolean): boolean {
-  const subscribe = useCallback(
-    (onChange: () => void) => {
-      const mql = window.matchMedia(query);
-      mql.addEventListener("change", onChange);
-      return () => mql.removeEventListener("change", onChange);
-    },
-    [query],
-  );
-
-  return useSyncExternalStore(
-    subscribe,
-    () => window.matchMedia(query).matches,
-    () => serverFallback,
-  );
-}
 
 /**
  * Wraps a halftone with its source artwork, revealed on attention: hover on
