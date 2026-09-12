@@ -275,14 +275,40 @@ export default async function Home() {
 
       <div className="flex flex-col gap-20">
         <Section index="01" title="now" href={fm ? `https://www.last.fm/user/${fm}` : undefined}>
-          {music.status === "ok" && initialListening ? (
-            <NowListening initial={initialListening} />
-          ) : (
-            <p className="text-[11px] text-ink-soft">
-              {music.status === "unconfigured" ? "not configured" : "unavailable"}
-              {music.status !== "ok" && ` — ${music.message}`}
-            </p>
-          )}
+          {/* Listening is what "now" means; the playlist sits beside it rather
+              than in a section of its own. */}
+          <div className="flex flex-wrap items-center gap-x-7">
+            <input type="radio" name="now-tab" id="now-listening" defaultChecked className="peer/listening sr-only" />
+            <input type="radio" name="now-tab" id="now-playlist" className="peer/playlist sr-only" />
+
+            <label htmlFor="now-listening" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/listening:border-ink peer-checked/listening:text-ink">
+              listening
+            </label>
+            <label htmlFor="now-playlist" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/playlist:border-ink peer-checked/playlist:text-ink">
+              playlist
+            </label>
+
+            <div className="mt-9 hidden w-full peer-checked/listening:block">
+              {music.status === "ok" && initialListening ? (
+                <NowListening initial={initialListening} />
+              ) : (
+                <p className="text-[11px] text-ink-soft">
+                  {music.status === "unconfigured" ? "not configured" : "unavailable"}
+                  {music.status !== "ok" && ` — ${music.message}`}
+                </p>
+              )}
+            </div>
+
+            {/* Kept mounted when the other tab is shown, so switching back
+                doesn't reload the player or stop what's playing. */}
+            <div className="mt-9 hidden w-full peer-checked/playlist:block">
+              {playlistEmbed ? (
+                <PlaylistEmbed src={playlistEmbed} title={PLAYLIST.title} href={PLAYLIST.url} />
+              ) : (
+                <p className="text-[11px] text-ink-soft">not an apple music link</p>
+              )}
+            </div>
+          </div>
         </Section>
 
 
@@ -318,16 +344,8 @@ export default async function Home() {
         </Section>
 
 
-        <Section index="03" title="playlist">
-          {playlistEmbed ? (
-            <PlaylistEmbed src={playlistEmbed} title={PLAYLIST.title} href={PLAYLIST.url} />
-          ) : (
-            <p className="text-[11px] text-ink-soft">not an apple music link</p>
-          )}
-        </Section>
-
         <Section
-          index="04"
+          index="03"
           title="recently watched"
           href={lb ? `https://letterboxd.com/${lb}/films/diary/` : undefined}
           result={movies}
@@ -389,7 +407,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="05"
+          index="04"
           title="reviews"
           className="hidden sm:block"
           href={lb ? `https://letterboxd.com/${lb}/films/reviews/` : undefined}
@@ -408,7 +426,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="06"
+          index="05"
           title="favorite films"
           href={lb ? `https://letterboxd.com/${lb}/` : undefined}
           result={favFilms}
@@ -417,7 +435,7 @@ export default async function Home() {
         </Section>
 
 
-        <Section index="07" title="series">
+        <Section index="06" title="series">
           <div className="flex flex-wrap items-center gap-x-7">
             <input type="radio" name="series-tab" id="series-watching" defaultChecked className="peer/watching sr-only" />
             <input type="radio" name="series-tab" id="series-seen" className="peer/seen sr-only" />
@@ -496,7 +514,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="08"
+          index="07"
           title="played"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={games}
@@ -620,7 +638,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="09"
+          index="08"
           title="favorite games"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={favGames}
@@ -628,7 +646,7 @@ export default async function Home() {
           {favGames.status === "ok" && <FavouriteGrid items={favGames.items} />}
         </Section>
 
-        <Section index="10" title="gallery">
+        <Section index="09" title="gallery">
           <div className="flex flex-wrap items-center gap-x-7">
             <input type="radio" name="gallery-tab" id="gallery-images" defaultChecked className="peer/images sr-only" />
             <input type="radio" name="gallery-tab" id="gallery-reels" className="peer/reels sr-only" />
