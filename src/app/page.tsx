@@ -270,7 +270,7 @@ export default async function Home() {
       <noscript>
         <style>{`.intro-overlay{display:none}`}</style>
       </noscript>
-      <Intro src="/intro/cosmos.mp4" caption="I rescued and injured bird, and once it healed it flew away" />
+      <Intro src="/intro/cosmos.mp4" caption="I rescued an injured bird, and once it healed it flew away" />
 
       <header className="mb-20 flex flex-wrap items-end justify-between gap-6 border-b border-rule pb-5">
         <h1 className="text-3xl font-medium lowercase tracking-[-0.045em] sm:text-4xl">wasserstiefel</h1>
