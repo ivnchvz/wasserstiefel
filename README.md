@@ -154,7 +154,8 @@ has to be shared publicly in Apple Music for anyone else to hear it.
 
 ## Gallery
 
-Section 09, with two tabs, both filled from `/admin`.
+Its own page at `/gallery`, reached from the tabs beside the masthead, with
+images and reels tabs of its own. Both are filled from `/admin`.
 
 **Images** are either linked (`src/data/gallery-images.json` stores the URL)
 or uploaded. A link is checked before it's saved, since the usual mistake is
@@ -165,8 +166,12 @@ colour, and **stripped of all metadata** - phone photos carry GPS coordinates,
 and this repository is public. They're named by content hash, and removing one
 in admin deletes its file.
 
-Halftones in the gallery follow each image's own proportions rather than the
-2:3 of posters, laid out in columns so nothing is cropped.
+Gallery images are shown as they are, not halftoned: that treatment belongs to
+the index, where it turns other people's artwork into the page's own language,
+but here the picture is the point. They're laid out in columns so nothing is
+cropped, and each one's proportions are measured server-side so a column holds
+its place before the image arrives. Clicking one opens it as large as the
+window allows, with arrow keys or the controls to move through the rest.
 
 **Reels** store an Instagram shortcode and, optionally, an uploaded still.
 Instagram's own thumbnail can't be used: the addresses in its embed are signed

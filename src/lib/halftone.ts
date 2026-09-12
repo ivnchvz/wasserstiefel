@@ -1,6 +1,5 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import sharp from "sharp";
+import { loadImage } from "./imageSource";
 
 /**
  * >1 lifts midtones toward paper. Tuned by eye against the reference
@@ -20,27 +19,6 @@ export type Halftone = {
  * poster reduces a photograph to squares. Rendering is left to the caller
  * so the same grid can drive squares, characters or anything else.
  */
-/**
- * Site-relative sources ("/gallery/x.jpg") are uploads sitting in
- * public/gallery, which the server can't fetch from itself before it is
- * listening - so they are read from disk. Anything else is fetched and cached
- * like artwork.
- */
-async function load(src: string): Promise<Buffer | null> {
-  if (src.startsWith("/")) {
-    // Only gallery uploads are local. The fixed folder keeps a crafted path
-    // from reaching anything else, and keeps the bundler's trace to it.
-    if (!src.startsWith("/gallery/")) return null;
-    return readFile(path.join(process.cwd(), "public", "gallery", path.basename(src))).catch(() => null);
-  }
-
-  const res = await fetch(src, {
-    headers: { "User-Agent": "wasserstiefel.dev personal site" },
-    next: { revalidate: 60 * 60 * 24 * 7 }, // artwork is effectively immutable
-  });
-  return res.ok ? Buffer.from(await res.arrayBuffer()) : null;
-}
-
 /** Tallest grid an "auto" height may produce, so a panorama's inverse can't run away. */
 const MAX_AUTO_ROWS = 80;
 
@@ -55,7 +33,7 @@ export async function halftone(
   { gamma = GAMMA, invert = false }: { gamma?: number; invert?: boolean } = {},
 ): Promise<Halftone | null> {
   try {
-    const buf = await load(src);
+    const buf = await loadImage(src);
     if (!buf) return null;
 
     let rows: number;
