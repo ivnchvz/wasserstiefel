@@ -168,10 +168,15 @@ in admin deletes its file.
 
 Gallery images are shown as they are, not halftoned: that treatment belongs to
 the index, where it turns other people's artwork into the page's own language,
-but here the picture is the point. They're laid out in columns so nothing is
-cropped, and each one's proportions are measured server-side so a column holds
-its place before the image arrives. Clicking one opens it as large as the
-window allows, with arrow keys or the controls to move through the rest.
+but here the picture is the point. They sit on a shared baseline at
+their own sizes, like objects on a shelf, with a catalogue line beneath each.
+
+Nothing is ever drawn larger than the file actually is - in the shelf or
+zoomed - since upscaling a low-resolution image only makes it soft. Each
+one's proportions are measured server-side, so a place is held before the
+image arrives. Clicking one opens it as large as the window allows (or as
+large as the file allows, whichever is smaller), with arrow keys or the
+controls to move through the rest.
 
 **Reels** store an Instagram shortcode and, optionally, an uploaded still.
 Instagram's own thumbnail can't be used: the addresses in its embed are signed

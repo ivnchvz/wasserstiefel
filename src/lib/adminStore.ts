@@ -74,9 +74,10 @@ export function createStore(file: string, opts: StoreOptions) {
           [{ path: repoPath, content: JSON.stringify(next.entries, null, 2) + "\n" }, ...(next.extra ?? [])],
           next.message,
         );
-        // Locally the homepage reads these files directly; in production the
-        // deploy triggered by the commit carries the change instead.
-        revalidatePath("/");
+        // Every page reads these files, not just the index - a gallery upload
+        // showed up nowhere until this cleared /gallery too. In production the
+        // deploy the commit triggers carries the change instead.
+        revalidatePath("/", "layout");
         return next.entries;
       } catch (err) {
         if (err instanceof GitHubError && err.status === 409 && attempt < 2) continue;

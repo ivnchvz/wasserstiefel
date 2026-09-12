@@ -50,13 +50,19 @@ export function GalleryViewer({ pictures }: { pictures: GalleryPicture[] }) {
 
   return (
     <>
-      <ul className="columns-2 gap-5 sm:columns-3 lg:columns-4">
+      {/*
+       * A shelf rather than a grid: each picture keeps its own proportions and
+       * they sit on a shared baseline, so a row reads as objects on a surface.
+       * Nothing is ever drawn larger than the file actually is - upscaling a
+       * small image just makes it soft.
+       */}
+      <ul className="flex flex-wrap items-end gap-x-7 gap-y-14">
         {pictures.map((p, i) => (
-          <li key={p.id} className="mb-5 break-inside-avoid">
+          <li key={p.id} className="flex w-fit max-w-[190px] flex-col gap-2">
             <button
               type="button"
               onClick={() => open(i)}
-              className="group block w-full cursor-zoom-in border border-rule bg-paper p-[3px] transition-colors hover:border-ink"
+              className="block cursor-zoom-in transition-opacity hover:opacity-80"
               aria-label={p.caption ? `Open ${p.caption}` : "Open image"}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -65,22 +71,25 @@ export function GalleryViewer({ pictures }: { pictures: GalleryPicture[] }) {
                 alt={p.caption ?? ""}
                 loading="lazy"
                 decoding="async"
-                // Its proportions are known, so the column holds the space
-                // before the picture arrives rather than jumping when it does.
-                style={p.width && p.height ? { aspectRatio: `${p.width} / ${p.height}` } : undefined}
-                className="block w-full"
+                style={{
+                  // Scales with the viewport, but never past the file's own size.
+                  maxHeight: p.height ? `min(clamp(120px, 22vw, 240px), ${p.height}px)` : "clamp(120px, 22vw, 240px)",
+                  maxWidth: p.width ? `min(clamp(96px, 18vw, 190px), ${p.width}px)` : "clamp(96px, 18vw, 190px)",
+                  aspectRatio: p.width && p.height ? `${p.width} / ${p.height}` : undefined,
+                }}
+                className="block h-auto w-auto"
               />
             </button>
-            {(p.caption || p.source) && (
-              <span className="mt-2 flex items-baseline justify-between gap-3 text-[10px] leading-snug">
-                <span className="text-ink">{p.caption}</span>
-                {p.source && (
-                  <a href={p.source} className="shrink-0 tracking-[0.1em] text-ink-soft hover:text-ink hover:underline">
-                    source ↗
-                  </a>
-                )}
-              </span>
-            )}
+
+            <span className="flex flex-col gap-0.5 text-[10px] leading-[1.5]">
+              <span className="tabular-nums text-ink-soft">{String(i + 1).padStart(2, "0")}</span>
+              {p.caption && <span className="text-ink">{p.caption}</span>}
+              {p.source && (
+                <a href={p.source} className="w-fit tracking-[0.1em] text-ink-soft hover:text-ink hover:underline">
+                  SRC ↗
+                </a>
+              )}
+            </span>
           </li>
         ))}
       </ul>
@@ -97,7 +106,13 @@ export function GalleryViewer({ pictures }: { pictures: GalleryPicture[] }) {
             <img
               src={current.src}
               alt={current.caption ?? ""}
-              className="pointer-events-auto max-h-[82vh] max-w-full cursor-zoom-out object-contain"
+              // Big enough to look at, never bigger than the file: a low-res
+              // picture stretched to fill the window only looks worse.
+              style={{
+                maxHeight: current.height ? `min(82vh, ${current.height}px)` : "82vh",
+                maxWidth: current.width ? `min(100%, ${current.width}px)` : "100%",
+              }}
+              className="pointer-events-auto cursor-zoom-out object-contain"
               onClick={() => dialog.current?.close()}
             />
 
