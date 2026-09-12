@@ -1,23 +1,50 @@
-import { createStore, type StoreEntry } from "@/lib/adminStore";
-import { GALLERY_REELS_FILE, reelShortcode } from "@/lib/gallery";
+import { NextResponse } from "next/server";
+import { adminGate } from "@/lib/adminGate";
+import { cannotSave, failure, type StoreEntry } from "@/lib/adminStore";
+import { reelEntry, reelsStore } from "@/lib/galleryStore";
+import { MAX_UPLOAD_BYTES, processUpload } from "@/lib/uploadImage";
+import type { FileChange } from "@/lib/repoStore";
 
-const store = createStore(GALLERY_REELS_FILE, {
-  label: "reels",
-  keyOf: (e) => String(e.shortcode ?? ""),
-  sanitise: (body) => {
-    const url = typeof body.url === "string" ? body.url : "";
-    // Existing entries are re-sent with their shortcode when edited.
-    const shortcode = reelShortcode(url) ?? (typeof body.shortcode === "string" ? body.shortcode : null);
-    if (!shortcode) return null;
+export const { GET, DELETE } = reelsStore;
 
-    const note = typeof body.note === "string" && body.note.trim() ? body.note.trim() : null;
-    return {
-      shortcode,
-      url: `https://www.instagram.com/reel/${shortcode}/`,
-      ...(note ? { note } : {}),
-      addedAt: typeof body.addedAt === "string" ? body.addedAt : new Date().toISOString().slice(0, 10),
-    } as StoreEntry;
-  },
-});
+/**
+ * Accepts JSON, or a form when a thumbnail comes with it. Instagram's own
+ * still can't be used - its image addresses are signed and expire within days
+ * - so a reel shows an uploaded still or a plain tile. The still and the reel
+ * are saved in one commit.
+ */
+export async function POST(request: Request) {
+  const denied = adminGate(request);
+  if (denied) return denied;
+  const blocked = cannotSave();
+  if (blocked) return NextResponse.json({ error: blocked }, { status: 503 });
 
-export const { GET, POST, DELETE } = store;
+  let body: StoreEntry;
+  const extra: FileChange[] = [];
+
+  if (request.headers.get("content-type")?.includes("multipart/form-data")) {
+    const form = await request.formData();
+    const text = (k: string) => (typeof form.get(k) === "string" ? (form.get(k) as string) : "");
+    body = { url: text("url"), shortcode: text("shortcode"), note: text("note") };
+
+    const file = form.get("file");
+    if (file instanceof File && file.size > 0) {
+      if (file.size > MAX_UPLOAD_BYTES) return NextResponse.json({ error: "that file is over 25MB" }, { status: 413 });
+      const image = await processUpload(file);
+      if (!image) return NextResponse.json({ error: "that file isn't an image" }, { status: 400 });
+      body.thumb = `/gallery/${image.name}`;
+      extra.push({ path: `public/gallery/${image.name}`, content: image.buffer });
+    }
+  } else {
+    body = (await request.json()) as StoreEntry;
+  }
+
+  const entry = reelEntry(body);
+  if (!entry) return NextResponse.json({ error: "invalid entry" }, { status: 400 });
+
+  try {
+    return NextResponse.json({ entries: reelsStore.shown(await reelsStore.upsert(entry, extra)) });
+  } catch (err) {
+    return failure(err);
+  }
+}

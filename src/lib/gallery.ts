@@ -21,6 +21,8 @@ export type Reel = {
   shortcode: string;
   url: string;
   note: string | null;
+  /** An uploaded still, since Instagram's own is signed and expires. */
+  thumb: string | null;
   addedAt: string | null;
 };
 
@@ -64,7 +66,13 @@ export async function getReels(): Promise<SectionResult<Reel>> {
     .map((e) => {
       const shortcode = str(e.shortcode);
       return shortcode
-        ? { shortcode, url: str(e.url) ?? `https://www.instagram.com/reel/${shortcode}/`, note: str(e.note), addedAt: str(e.addedAt) }
+        ? {
+            shortcode,
+            url: str(e.url) ?? `https://www.instagram.com/reel/${shortcode}/`,
+            note: str(e.note),
+            thumb: str(e.thumb),
+            addedAt: str(e.addedAt),
+          }
         : null;
     })
     .filter((e): e is Reel => e !== null);

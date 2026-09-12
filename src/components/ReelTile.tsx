@@ -15,7 +15,18 @@ const FALLBACK_HEIGHT = 690;
  * Instagram's official one, framed as it is meant to be; no media is pulled
  * out of it, since its image URLs are signed and expire within days anyway.
  */
-export function ReelTile({ shortcode, note, index }: { shortcode: string; note: string | null; index: number }) {
+export function ReelTile({
+  shortcode,
+  note,
+  index,
+  poster,
+}: {
+  shortcode: string;
+  note: string | null;
+  index: number;
+  /** A halftone of the uploaded still, rendered on the server. */
+  poster?: React.ReactNode;
+}) {
   const dialog = useRef<HTMLDialogElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
   const [open, setOpen] = useState(false);
@@ -57,18 +68,26 @@ export function ReelTile({ shortcode, note, index }: { shortcode: string; note: 
         className="group relative flex aspect-[9/16] w-full flex-col justify-between overflow-hidden border border-rule bg-paper p-3 text-left transition-colors hover:border-ink"
         aria-label={`Play reel${note ? `: ${note}` : ""}`}
       >
-        {/* A dot grid, so an unopened reel still reads as part of the page's halftone language. */}
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 text-ink opacity-[0.16] transition-opacity group-hover:opacity-30"
-          style={{ backgroundImage: "radial-gradient(currentColor 0.9px, transparent 1.1px)", backgroundSize: "7px 7px" }}
-        />
+        {poster ? (
+          <span aria-hidden="true" // Held back so the labels over it stay readable; full strength on hover.
+            className="pointer-events-none absolute inset-0 overflow-hidden text-ink opacity-[0.55] transition-opacity group-hover:opacity-90">
+            {poster}
+          </span>
+        ) : (
+          /* Without a still, a dot grid keeps the tile in the page's halftone language. */
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 text-ink opacity-[0.16] transition-opacity group-hover:opacity-30"
+            style={{ backgroundImage: "radial-gradient(currentColor 0.9px, transparent 1.1px)", backgroundSize: "7px 7px" }}
+          />
+        )}
         <span className="relative flex items-baseline justify-between text-[10px] tracking-[0.18em] text-ink-soft">
-          <span>reel</span>
-          <span className="tabular-nums">{String(index + 1).padStart(2, "0")}</span>
+          {/* On paper, so they read against a busy still underneath. */}
+          <span className="bg-paper px-1">reel</span>
+          <span className="bg-paper px-1 tabular-nums">{String(index + 1).padStart(2, "0")}</span>
         </span>
         <span className="relative self-center bg-paper px-2 text-2xl leading-none text-ink">▶</span>
-        <span className="relative line-clamp-4 bg-paper/80 text-[11px] leading-snug text-ink">{note ?? " "}</span>
+        <span className="relative line-clamp-4 bg-paper px-1 text-[11px] leading-snug text-ink">{note ?? " "}</span>
       </button>
 
       <dialog

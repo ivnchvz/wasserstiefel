@@ -141,6 +141,17 @@ used elsewhere. Unrated rows (`0`) are skipped. Cover art is looked up from the
 iTunes Search API, which needs no key — a few releases aren't in its index, and
 those fall back to a titled placeholder.
 
+## Playlist
+
+Section 03 plays a shared Apple Music playlist through Apple's own embedded
+player, which needs no key and allows framing. It loads on click rather than on
+page load - it pulls a fair amount of script - and stays mounted afterwards, so
+the music keeps playing while the rest of the page is read. Signed-out
+listeners hear previews; signed in to Apple Music, whole tracks.
+
+Set `APPLE_PLAYLIST_URL` and `APPLE_PLAYLIST_TITLE` to change it; the playlist
+has to be shared publicly in Apple Music for anyone else to hear it.
+
 ## Gallery
 
 Section 09, with two tabs, both filled from `/admin`.
@@ -157,7 +168,14 @@ in admin deletes its file.
 Halftones in the gallery follow each image's own proportions rather than the
 2:3 of posters, laid out in columns so nothing is cropped.
 
-**Reels** store only an Instagram shortcode. The page shows a paper tile; the
+**Reels** store an Instagram shortcode and, optionally, an uploaded still.
+Instagram's own thumbnail can't be used: the addresses in its embed are signed
+and expire within days, and pulling media out of the embed isn't something it
+permits. So a reel shows a still you upload, halftoned like everything else, or
+a plain dot-grid tile. The still and the reel are saved in one commit, and
+removing the reel deletes it.
+
+The page shows a paper tile; the
 official Instagram embed is loaded into an overlay only when it's clicked, and
 removed when it closes. Nothing is requested from Instagram before that - a
 visitor who never opens a reel never contacts it (opening one makes around 40

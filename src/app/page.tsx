@@ -10,11 +10,12 @@ import { HalftoneImage } from "@/components/Halftone";
 import { Reveal } from "@/components/Reveal";
 import { NowListening } from "@/components/NowListening";
 import { ReelTile } from "@/components/ReelTile";
+import { PlaylistEmbed } from "@/components/PlaylistEmbed";
 import { NowPlayingBanner } from "@/components/NowPlayingBanner";
 import { halftone } from "@/lib/halftone";
 import type { NowPlayingPayload } from "./api/now-playing/route";
 import type { Favorite, Movie, SectionResult } from "@/lib/types";
-import { BACKLOGGD_USER, LASTFM_USER, LETTERBOXD_USER } from "@/lib/config";
+import { appleEmbedUrl, BACKLOGGD_USER, LASTFM_USER, LETTERBOXD_USER, PLAYLIST } from "@/lib/config";
 
 export const revalidate = 60;
 
@@ -251,6 +252,8 @@ export default async function Home() {
     };
   }
 
+  const playlistEmbed = appleEmbedUrl(PLAYLIST.url);
+
   const lb = LETTERBOXD_USER;
   const bl = BACKLOGGD_USER;
   const fm = LASTFM_USER;
@@ -314,8 +317,17 @@ export default async function Home() {
           </ul>
         </Section>
 
+
+        <Section index="03" title="playlist">
+          {playlistEmbed ? (
+            <PlaylistEmbed src={playlistEmbed} title={PLAYLIST.title} href={PLAYLIST.url} />
+          ) : (
+            <p className="text-[11px] text-ink-soft">not an apple music link</p>
+          )}
+        </Section>
+
         <Section
-          index="03"
+          index="04"
           title="recently watched"
           href={lb ? `https://letterboxd.com/${lb}/films/diary/` : undefined}
           result={movies}
@@ -377,7 +389,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="04"
+          index="05"
           title="reviews"
           className="hidden sm:block"
           href={lb ? `https://letterboxd.com/${lb}/films/reviews/` : undefined}
@@ -396,7 +408,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="05"
+          index="06"
           title="favorite films"
           href={lb ? `https://letterboxd.com/${lb}/` : undefined}
           result={favFilms}
@@ -405,7 +417,7 @@ export default async function Home() {
         </Section>
 
 
-        <Section index="06" title="series">
+        <Section index="07" title="series">
           <div className="flex flex-wrap items-center gap-x-7">
             <input type="radio" name="series-tab" id="series-watching" defaultChecked className="peer/watching sr-only" />
             <input type="radio" name="series-tab" id="series-seen" className="peer/seen sr-only" />
@@ -484,7 +496,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="07"
+          index="08"
           title="played"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={games}
@@ -608,7 +620,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="08"
+          index="09"
           title="favorite games"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={favGames}
@@ -616,7 +628,7 @@ export default async function Home() {
           {favGames.status === "ok" && <FavouriteGrid items={favGames.items} />}
         </Section>
 
-        <Section index="09" title="gallery">
+        <Section index="10" title="gallery">
           <div className="flex flex-wrap items-center gap-x-7">
             <input type="radio" name="gallery-tab" id="gallery-images" defaultChecked className="peer/images sr-only" />
             <input type="radio" name="gallery-tab" id="gallery-reels" className="peer/reels sr-only" />
@@ -666,7 +678,23 @@ export default async function Home() {
                 <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
                   {reels.items.map((r, i) => (
                     <li key={r.shortcode}>
-                      <ReelTile shortcode={r.shortcode} note={r.note} index={i} />
+                      <ReelTile
+                        shortcode={r.shortcode}
+                        note={r.note}
+                        index={i}
+                        poster={
+                          r.thumb ? (
+                            <HalftoneImage
+                              src={r.thumb}
+                              cols={30}
+                              rows="auto"
+                              label={r.note ?? "reel still"}
+                              className="h-full w-full text-ink"
+                              preserveAspectRatio="xMidYMid slice"
+                            />
+                          ) : null
+                        }
+                      />
                     </li>
                   ))}
                 </ul>

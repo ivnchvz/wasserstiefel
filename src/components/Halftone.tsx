@@ -16,6 +16,7 @@ export async function HalftoneImage({
   className,
   label,
   invert = false,
+  preserveAspectRatio,
 }: {
   src: string;
   cols?: number;
@@ -25,6 +26,8 @@ export async function HalftoneImage({
   label?: string;
   /** Draw the marks for light instead of dark, for use on an ink ground. */
   invert?: boolean;
+  /** "slice" fills its box and crops, the way object-fit: cover would. */
+  preserveAspectRatio?: string;
 }) {
   const grid = await halftone(src, cols, rows, { invert });
   if (!grid) return <span className={`block bg-[--ink]/5 ${className ?? ""}`} />;
@@ -61,6 +64,7 @@ export async function HalftoneImage({
       role="img"
       aria-label={label ?? "halftone image"}
       shapeRendering="crispEdges"
+      preserveAspectRatio={preserveAspectRatio}
     >
       <g fill="currentColor">{squares}</g>
     </svg>

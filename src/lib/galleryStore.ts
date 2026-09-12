@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createStore, type StoreEntry } from "./adminStore";
-import { GALLERY_IMAGES_FILE } from "./gallery";
+import { GALLERY_IMAGES_FILE, GALLERY_REELS_FILE, reelShortcode } from "./gallery";
 import { rawUrl, storageMode } from "./repoStore";
 
 /** What an upload's src looks like: content-hashed, always re-encoded to JPEG. */
@@ -31,4 +31,30 @@ export const imagesStore = createStore(GALLERY_IMAGES_FILE, {
   // triggers has finished, so admin previews it from GitHub in the meantime.
   present: (e) =>
     UPLOADED.test(String(e.src)) && storageMode() === "github" ? { ...e, preview: rawUrl(`public${e.src}`) } : e,
+});
+
+export function reelEntry(body: StoreEntry): StoreEntry | null {
+  const url = typeof body.url === "string" ? body.url : "";
+  // An existing entry is re-sent with its shortcode when edited.
+  const shortcode = reelShortcode(url) ?? (typeof body.shortcode === "string" ? body.shortcode : null);
+  if (!shortcode) return null;
+
+  return {
+    shortcode,
+    url: `https://www.instagram.com/reel/${shortcode}/`,
+    ...(str(body.note) ? { note: str(body.note) } : {}),
+    ...(str(body.thumb) ? { thumb: str(body.thumb) } : {}),
+    addedAt: str(body.addedAt) ?? new Date().toISOString().slice(0, 10),
+  };
+}
+
+export const reelsStore = createStore(GALLERY_REELS_FILE, {
+  label: "reels",
+  keyOf: (e) => String(e.shortcode ?? ""),
+  sanitise: reelEntry,
+  ownedFiles: (e) => (UPLOADED.test(String(e.thumb ?? "")) ? [`public${e.thumb}`] : []),
+  present: (e) =>
+    UPLOADED.test(String(e.thumb ?? "")) && storageMode() === "github"
+      ? { ...e, preview: rawUrl(`public${e.thumb}`) }
+      : e,
 });

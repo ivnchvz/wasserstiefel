@@ -13,3 +13,24 @@ export const LETTERBOXD_USER = process.env.LETTERBOXD_USERNAME ?? "wasserstiefel
 export const BACKLOGGD_USER = process.env.BACKLOGGD_USERNAME ?? "wasserstiefel";
 export const LASTFM_USER = process.env.LASTFM_USERNAME ?? "wasserstiefel";
 export const STEAM_ACCOUNT = process.env.STEAM_ID ?? "wasserstiefel";
+
+/** A playlist to share, shown with Apple's own embedded player. */
+export const PLAYLIST = {
+  url: process.env.APPLE_PLAYLIST_URL ?? "https://music.apple.com/us/playlist/linux-kernel/pl.u-Ymb0vd5IgEPR50y",
+  title: process.env.APPLE_PLAYLIST_TITLE ?? "Linux Kernel",
+};
+
+/**
+ * Apple serves the player from embed.music.apple.com at the same path as the
+ * page it came from, so a shared link converts by swapping the host.
+ */
+export function appleEmbedUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (!/(^|\.)music\.apple\.com$/.test(u.hostname)) return null;
+    u.hostname = "embed.music.apple.com";
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
