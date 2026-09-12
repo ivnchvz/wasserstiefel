@@ -194,8 +194,16 @@ Logs games, series, albums and the gallery without editing JSON by hand.
 `src/data/` and `public/gallery/` - commit them to publish.
 
 **On the live site** it needs a login, and saves become **commits** made through
-the GitHub API: Vercel deploys every push, so a change shows up about a minute
-after saving, and git stays the single record of everything. An upload and its
+the GitHub API, so git stays the single record of everything.
+
+Those commits are prefixed `admin:`, and `vercel.json` tells Vercel to skip
+building them - otherwise every keystroke-sized change rebuilt the site.
+Leaving admin adds one commit without that prefix, which is the build that
+carries everything logged in the session. Admin shows how many saves are
+waiting and can publish on demand. (Vercel doesn't honour `[skip ci]`; skipping
+is only configurable through `ignoreCommand`.)
+
+A save that changes nothing doesn't commit at all. An upload and its
 list entry are one commit; removing an upload deletes its file in the same
 commit. If two saves race, the second is re-applied on top of the first rather
 than overwriting it.

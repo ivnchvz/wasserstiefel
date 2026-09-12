@@ -60,7 +60,15 @@ export function createStore(file: string, opts: StoreOptions) {
     change: (entries: StoreEntry[]) => { entries: StoreEntry[]; extra?: FileChange[]; message: string },
   ): Promise<StoreEntry[]> {
     for (let attempt = 0; ; attempt++) {
-      const next = change(await load());
+      const current = await load();
+      const next = change(current);
+
+      // Nothing actually changed - a field re-saved with the value it already
+      // had. Committing that would rebuild the site for no reason.
+      if (!next.extra?.length && JSON.stringify(next.entries) === JSON.stringify(current)) {
+        return current;
+      }
+
       try {
         await commitRepoFiles(
           [{ path: repoPath, content: JSON.stringify(next.entries, null, 2) + "\n" }, ...(next.extra ?? [])],

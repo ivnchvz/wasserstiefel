@@ -7,6 +7,7 @@ import { SESSION_COOKIE, verifySession } from "@/lib/adminSession";
 import { cannotSave } from "@/lib/adminStore";
 import { storageMode } from "@/lib/repoStore";
 import { LogoutButton } from "./LogoutButton";
+import { PublishOnLeave } from "./PublishOnLeave";
 import { AdminLibrary, type LibraryConfig } from "./AdminLibrary";
 import { AdminGallery } from "./AdminGallery";
 
@@ -52,7 +53,7 @@ export default async function AdminPage() {
   const where = blocked
     ? blocked
     : storageMode() === "github"
-      ? `saves commit to ${process.env.ADMIN_BRANCH ?? "main"} on GitHub — the site updates once Vercel finishes deploying, about a minute`
+      ? `saves commit to ${process.env.ADMIN_BRANCH ?? "main"} on GitHub as you make them; the site rebuilds once you leave admin, taking about a minute`
       : "saves write to the files in this folder — commit them to publish";
 
   return (
@@ -67,9 +68,10 @@ export default async function AdminPage() {
         </span>
       </header>
 
-      <p className={`mb-12 px-4 py-3 text-[11px] leading-relaxed ${blocked ? "border border-ink text-ink" : "border border-rule text-ink-soft"}`}>
-        {where}
-      </p>
+      <div className={`mb-12 flex flex-wrap items-baseline justify-between gap-4 px-4 py-3 ${blocked ? "border border-ink" : "border border-rule"}`}>
+        <p className={`text-[11px] leading-relaxed ${blocked ? "text-ink" : "text-ink-soft"}`}>{where}</p>
+        {live && <PublishOnLeave />}
+      </div>
 
 
       <div className="flex flex-col gap-20">

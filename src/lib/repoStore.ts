@@ -78,6 +78,53 @@ export class GitHubError extends Error {
   }
 }
 
+/**
+ * Commits made by admin are prefixed so the build can tell them apart:
+ * vercel.json skips any deployment whose newest commit starts with this, and
+ * publishing lands one commit without it. Saving is therefore free, and the
+ * site rebuilds once at the end instead of once per click.
+ */
+export const ADMIN_COMMIT_PREFIX = "admin:";
+
+/** How many admin commits sit on top of the last published one. */
+export async function unpublishedCount(): Promise<number> {
+  if (storageMode() === "local") return 0;
+
+  const commits = await ghJson<{ commit: { message: string } }[]>(
+    `/commits?sha=${encodeURIComponent(BRANCH)}&per_page=40`,
+  );
+  const at = commits.findIndex((c) => !c.commit.message.startsWith(ADMIN_COMMIT_PREFIX));
+  return at === -1 ? commits.length : at;
+}
+
+/**
+ * Points the branch at a commit carrying the same tree under a different
+ * message - nothing changes, but the message no longer starts with the admin
+ * prefix, so this is the commit Vercel builds.
+ */
+export async function publishPending(): Promise<number> {
+  const pending = await unpublishedCount();
+  if (pending === 0) return 0;
+
+  const ref = await ghJson<{ object: { sha: string } }>(`/git/ref/heads/${encodeURIComponent(BRANCH)}`);
+  const head = await ghJson<{ tree: { sha: string } }>(`/git/commits/${ref.object.sha}`);
+  const commit = await ghJson<{ sha: string }>(`/git/commits`, {
+    method: "POST",
+    body: JSON.stringify({
+      message: `publish: ${pending} change${pending === 1 ? "" : "s"} from admin`,
+      tree: head.tree.sha,
+      parents: [ref.object.sha],
+    }),
+  });
+
+  const moved = await gh(`/git/refs/heads/${encodeURIComponent(BRANCH)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ sha: commit.sha, force: false }),
+  });
+  if (!moved.ok) throw new GitHubError(moved.status, `publishing: ${moved.status}`);
+  return pending;
+}
+
 export async function readRepoFile(repoPath: string): Promise<Buffer | null> {
   if (storageMode() === "local") {
     return readFile(localPath(repoPath)).catch(() => null);

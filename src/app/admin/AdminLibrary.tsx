@@ -38,6 +38,89 @@ const FIELD = "border border-rule bg-transparent px-2 py-1 text-[10px] outline-n
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+/** How long to wait after the last keystroke before saving. */
+const SETTLE_MS = 900;
+
+/**
+ * A logged entry's row. The fields are local while being edited and saved once
+ * they settle - bound straight to the server, a rating typed as "4.5" saved
+ * three times, and each save was a commit and a deploy.
+ */
+function LoggedRow({
+  entry,
+  statuses,
+  dateField,
+  label,
+  onSave,
+  onRemove,
+}: {
+  entry: Entry;
+  statuses: readonly string[];
+  dateField: LibraryConfig["dateField"];
+  label: string;
+  onSave: (e: Entry) => Promise<void>;
+  onRemove: () => void;
+}) {
+  const [draft, setDraft] = useState(entry);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Save whatever is pending if the row goes away mid-edit.
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const edit = (patch: Entry, immediate = false) => {
+    const next = { ...draft, ...patch };
+    setDraft(next);
+    clearTimeout(timer.current);
+    if (immediate) void onSave(next);
+    else timer.current = setTimeout(() => void onSave(next), SETTLE_MS);
+  };
+
+  return (
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-rule py-3">
+      <span className="min-w-0 flex-1 truncate text-[13px]">{label}</span>
+
+      {statuses.length > 0 && (
+        <select
+          value={(draft.status as string) ?? ""}
+          onChange={(e) => edit({ status: e.target.value }, true)}
+          className={`${FIELD} tracking-[0.1em]`}
+        >
+          <option value="">no status</option>
+          {statuses.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+      )}
+
+      <input
+        type="date"
+        value={(draft[dateField] as string) ?? ""}
+        onChange={(e) => edit({ [dateField]: e.target.value })}
+        onBlur={() => void onSave(draft)}
+        className={`${FIELD} tabular-nums`}
+      />
+
+      <input
+        type="number"
+        min={0}
+        max={5}
+        step={0.5}
+        placeholder="—"
+        value={(draft.rating as number) ?? ""}
+        onChange={(e) => edit({ rating: e.target.value === "" ? null : Number(e.target.value) })}
+        onBlur={() => void onSave(draft)}
+        className={`${FIELD} w-16 tabular-nums`}
+      />
+
+      <button type="button" onClick={onRemove} className={CHIP}>
+        remove
+      </button>
+    </li>
+  );
+}
+
 export function AdminLibrary({ config }: { config: LibraryConfig }) {
   const { kind, heading, placeholder, statuses, dateField, idField, mode = "status" } = config;
 
@@ -192,48 +275,15 @@ export function AdminLibrary({ config }: { config: LibraryConfig }) {
       ) : (
         <ul className="flex flex-col">
           {entries.map((e) => (
-            <li key={keyOf(e)} className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-rule py-3">
-              <span className="min-w-0 flex-1 truncate text-[13px]">
-                {String(e.title ?? e[idField])}
-              </span>
-
-              {statuses.length > 0 && (
-              <select
-                value={(e.status as string) ?? ""}
-                onChange={(ev) => upsert({ ...e, status: ev.target.value })}
-                className={`${FIELD} tracking-[0.1em]`}
-              >
-                <option value="">no status</option>
-                {statuses.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-              )}
-
-              <input
-                type="date"
-                value={(e[dateField] as string) ?? ""}
-                onChange={(ev) => upsert({ ...e, [dateField]: ev.target.value })}
-                className={`${FIELD} tabular-nums`}
-              />
-
-              <input
-                type="number"
-                min={0}
-                max={5}
-                step={0.5}
-                placeholder="—"
-                value={(e.rating as number) ?? ""}
-                onChange={(ev) => upsert({ ...e, rating: ev.target.value === "" ? null : Number(ev.target.value) })}
-                className={`${FIELD} w-16 tabular-nums`}
-              />
-
-              <button type="button" onClick={() => remove(e)} className={CHIP}>
-                remove
-              </button>
-            </li>
+            <LoggedRow
+              key={keyOf(e)}
+              entry={e}
+              statuses={statuses}
+              dateField={dateField}
+              label={String(e.title ?? e[idField])}
+              onSave={(next) => upsert(next)}
+              onRemove={() => remove(e)}
+            />
           ))}
         </ul>
       )}
