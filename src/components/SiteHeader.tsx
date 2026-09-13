@@ -21,11 +21,7 @@ export function SiteHeader({ active }: { active: Section }) {
     <header className="mb-20 border-b border-rule pb-5">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <h1 className="text-3xl font-medium lowercase tracking-[-0.045em] sm:text-4xl">wasserstiefel</h1>
-        <p className="text-[10px] leading-[1.7] tracking-[0.12em] text-ink-soft">
-          watched · played · heard
-          <br />
-          an index, updated automatically
-        </p>
+        <p className="text-[10px] tracking-[0.12em] text-ink-soft">an insight</p>
       </div>
 
       <nav className="mt-6 flex items-baseline gap-7">

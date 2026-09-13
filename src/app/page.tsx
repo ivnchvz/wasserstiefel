@@ -598,9 +598,6 @@ export default async function Home() {
 
       </div>
 
-      <footer className="mt-24 border-t border-rule pt-5 text-[10px] tracking-[0.12em] text-ink-soft">
-        posters rendered as halftone grids from source artwork
-      </footer>
     </main>
   );
 }
