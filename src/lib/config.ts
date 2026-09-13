@@ -34,3 +34,13 @@ export function appleEmbedUrl(url: string): string | null {
     return null;
   }
 }
+
+/**
+ * The site's own address, needed wherever a link has to be absolute - the
+ * feed. Vercel provides the production domain; locally it falls back to dev.
+ */
+export const SITE_URL =
+  process.env.SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");

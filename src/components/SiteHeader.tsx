@@ -3,9 +3,11 @@ import Link from "next/link";
 const TAB =
   "border-b pb-1 text-[11px] lowercase tracking-[0.2em] transition-colors hover:text-ink";
 
-/** The masthead, and the two things the site is: an index, and a gallery. */
-export function SiteHeader({ active }: { active: "index" | "gallery" }) {
-  const tab = (href: string, label: string, key: "index" | "gallery") => (
+/** The masthead, and the three things the site is. */
+type Section = "index" | "gallery" | "writing";
+
+export function SiteHeader({ active }: { active: Section }) {
+  const tab = (href: string, label: string, key: Section) => (
     <Link
       href={href}
       className={`${TAB} ${active === key ? "border-ink text-ink" : "border-transparent text-ink-soft"}`}
@@ -29,6 +31,7 @@ export function SiteHeader({ active }: { active: "index" | "gallery" }) {
       <nav className="mt-6 flex items-baseline gap-7">
         {tab("/", "index", "index")}
         {tab("/gallery", "gallery", "gallery")}
+        {tab("/writing", "writing", "writing")}
       </nav>
     </header>
   );

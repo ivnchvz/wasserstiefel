@@ -1,4 +1,4 @@
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
@@ -37,7 +37,31 @@ function localPath(repoPath: string): string {
   const name = path.basename(repoPath);
   if (repoPath === `src/data/${name}`) return path.join(process.cwd(), "src", "data", name);
   if (repoPath === `public/gallery/${name}`) return path.join(process.cwd(), "public", "gallery", name);
+  if (repoPath === `${POSTS_DIR}/${name}`) return path.join(process.cwd(), "src", "content", "posts", name);
   throw new Error(`admin doesn't write to ${repoPath}`);
+}
+
+/** Posts are one file each, rather than rows in a shared list. */
+export const POSTS_DIR = "src/content/posts";
+
+/**
+ * Names the files in a repository folder. Posts are documents in their own
+ * right, so the folder is the index rather than a JSON list to keep in step.
+ */
+export async function listRepoDir(dir: string): Promise<string[]> {
+  if (storageMode() === "local") {
+    // Spelled out rather than joined from `dir`: a dynamic path here makes the
+    // bundler trace the entire project into every function that touches it.
+    if (dir !== POSTS_DIR) throw new Error(`admin doesn't list ${dir}`);
+    return readdir(path.join(process.cwd(), "src", "content", "posts")).catch(() => []);
+  }
+
+  const res = await gh(`/contents/${dir}?ref=${encodeURIComponent(BRANCH)}`);
+  if (res.status === 404) return [];
+  if (!res.ok) throw new GitHubError(res.status, `listing ${dir}: ${res.status}`);
+
+  const entries = (await res.json()) as { name?: string; type?: string }[];
+  return entries.filter((e) => e.type === "file" && e.name).map((e) => e.name!);
 }
 
 export type FileChange = {

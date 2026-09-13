@@ -10,6 +10,7 @@ import { Reveal } from "@/components/Reveal";
 import { NowListening } from "@/components/NowListening";
 import { PlaylistEmbed } from "@/components/PlaylistEmbed";
 import { Intro } from "@/components/Intro";
+import { formatDate as when } from "@/lib/dates";
 import { SiteHeader } from "@/components/SiteHeader";
 import { NowPlayingBanner } from "@/components/NowPlayingBanner";
 import { halftone } from "@/lib/halftone";
@@ -19,15 +20,6 @@ import { appleEmbedUrl, BACKLOGGD_USER, LASTFM_USER, LETTERBOXD_USER, PLAYLIST }
 
 export const revalidate = 60;
 
-/** Crouwel's exhibition dates read 30.03-03.07.11; dates here follow suit. */
-function when(date: string | null): string | null {
-  if (!date) return null;
-  const local = /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : date;
-  const d = new Date(local);
-  if (Number.isNaN(d.getTime())) return null;
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${String(d.getFullYear()).slice(2)}`;
-}
 
 /** Five cells, filled by score - the grid logic applied to a rating. */
 function Rating({ value }: { value: number | null }) {

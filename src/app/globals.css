@@ -86,3 +86,93 @@ body {
     display: none;
   }
 }
+
+/*
+ * Long-form writing. The measure and rhythm come from the review typography
+ * on the index, which already reads well; this gives the same treatment to
+ * everything Markdown can produce.
+ */
+.prose {
+  font-size: 13px;
+  line-height: 1.85;
+  color: var(--ink);
+}
+
+.prose > * + * {
+  margin-top: 1.15em;
+}
+
+.prose h2,
+.prose h3 {
+  margin-top: 2.4em;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: var(--ink-soft);
+}
+
+.prose h3 {
+  letter-spacing: 0.1em;
+}
+
+.prose a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.4em;
+}
+
+.prose ul {
+  list-style: square;
+}
+
+.prose ol {
+  list-style: decimal;
+}
+
+.prose li + li {
+  margin-top: 0.35em;
+}
+
+.prose blockquote {
+  border-left: 1px solid var(--rule);
+  padding-left: 1.1em;
+  color: var(--ink-soft);
+}
+
+.prose code {
+  background: rgb(0 0 0 / 0.05);
+  padding: 0.1em 0.35em;
+  font-size: 0.92em;
+}
+
+.prose pre {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  padding: 1em;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.prose pre code {
+  background: none;
+  padding: 0;
+}
+
+.prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--rule);
+}
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 2.4em 0;
+}

@@ -196,6 +196,34 @@ within days, and the embed is the sanctioned way to show a post.
 Uploads have the same limit as the rest of admin - they only persist where the
 repository is writable, so add them locally and commit.
 
+## Writing
+
+`/writing`, reached from the tabs beside the masthead. Posts are one Markdown
+file each in `src/content/posts/`, with a small front-matter block:
+
+```
+---
+title: "Keeping a website by hand"
+date: 2026-09-12
+draft: false
+---
+```
+
+The folder is the index - no list to keep in step - and drafts stay out of the
+site while remaining visible in admin. A draft opened by its address renders,
+but asks not to be indexed.
+
+Markdown is rendered with `markdown-it`, with raw HTML switched off. Typography
+follows the review styling on the index: a 64-character measure, headings as
+tracked lowercase labels. Reading time counts at 200 words a minute.
+
+`/writing/rss.xml` serves a feed of the published posts.
+
+Write from `/admin`: title, address, date, a draft switch, a body, and a
+preview. Pasting an image into the body uploads it and inserts the Markdown -
+that goes to `public/gallery/` but does *not* appear in the gallery, which is
+a separate list.
+
 ## /admin
 
 Logs games, series, albums and the gallery without editing JSON by hand.
