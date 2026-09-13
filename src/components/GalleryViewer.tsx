@@ -98,7 +98,7 @@ export function GalleryViewer({ pictures }: { pictures: GalleryPicture[] }) {
         ref={dialog}
         onClose={() => setAt(null)}
         onClick={(e) => e.target === dialog.current && dialog.current?.close()}
-        className="h-full max-h-none w-full max-w-none bg-transparent p-0 backdrop:bg-ink/90"
+        className="h-full max-h-none w-full max-w-none bg-transparent p-0 backdrop:bg-[var(--scrim)]"
       >
         {current && (
           <div className="pointer-events-none flex h-full w-full flex-col items-center justify-center gap-4 p-4 sm:p-8">
@@ -116,13 +116,13 @@ export function GalleryViewer({ pictures }: { pictures: GalleryPicture[] }) {
               onClick={() => dialog.current?.close()}
             />
 
-            <div className="pointer-events-auto flex w-full max-w-3xl items-baseline justify-between gap-6 text-paper">
+            <div className="pointer-events-auto flex w-full max-w-3xl items-baseline justify-between gap-6 text-slab-ink">
               <button type="button" onClick={() => step(-1)} className="text-[11px] tracking-[0.16em] hover:underline" aria-label="Previous image">
                 ← prev
               </button>
               <span className="min-w-0 flex-1 truncate text-center text-[11px]">
                 {current.caption}
-                <span className="ml-3 tabular-nums text-paper/60">
+                <span className="ml-3 tabular-nums text-slab-ink/60">
                   {(at ?? 0) + 1}/{pictures.length}
                 </span>
               </span>
@@ -134,7 +134,7 @@ export function GalleryViewer({ pictures }: { pictures: GalleryPicture[] }) {
             <button
               type="button"
               onClick={() => dialog.current?.close()}
-              className="pointer-events-auto text-[10px] tracking-[0.16em] text-paper/60 hover:text-paper hover:underline"
+              className="pointer-events-auto text-[10px] tracking-[0.16em] text-slab-ink/60 hover:text-paper hover:underline"
             >
               close ✕
             </button>

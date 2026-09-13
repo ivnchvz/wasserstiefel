@@ -113,8 +113,12 @@ export async function getRecentTracks(
 /** Pairs the tracks with the featured one's artwork, as ASCII. */
 export async function withArtwork(tracks: Track[]): Promise<NowListening> {
   const art = tracks[0]?.artwork;
+  // Wider than tall on purpose: a character cell is about 0.56em wide and
+  // 0.82em high, so a square sampling of a square cover renders squashed.
+  // 44x30 characters comes out square on the page.
+  //
   // The artwork fetch inside halftone() is cached for a week, so polling
   // redraws from a stored image rather than downloading it again.
-  const grid = art ? await halftone(art, 26, 26) : null;
+  const grid = art ? await halftone(art, 44, 30) : null;
   return { tracks, ascii: grid ? toAscii(grid) : null };
 }

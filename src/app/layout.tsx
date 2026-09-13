@@ -15,11 +15,21 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${plexMono.variable} h-full`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    // The script below sets data-theme, which the server can't predict.
+    <html lang="en" className={`${plexMono.variable} h-full`} suppressHydrationWarning>
+      <body className="min-h-full flex flex-col">
+        {/*
+         * Applies a saved theme before anything paints. Rendered inline and
+         * run first: loading it later would show the wrong palette for a
+         * frame, which is worse than the cost of a few bytes here.
+         */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}`,
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

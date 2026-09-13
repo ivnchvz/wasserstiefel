@@ -95,13 +95,13 @@ export function ReelTile({
         onClose={() => setOpen(false)}
         // A click that lands on the backdrop, not the player, closes it.
         onClick={(e) => e.target === dialog.current && hide()}
-        className="m-auto bg-transparent p-0 backdrop:bg-ink/85"
+        className="m-auto bg-transparent p-0 backdrop:bg-[var(--scrim)]"
       >
         <div className="flex w-[min(380px,92vw)] flex-col">
           <button
             type="button"
             onClick={hide}
-            className="self-end px-1 pb-2 text-[11px] tracking-[0.16em] text-paper hover:underline"
+            className="self-end px-1 pb-2 text-[11px] tracking-[0.16em] text-slab-ink hover:underline"
           >
             close ✕
           </button>

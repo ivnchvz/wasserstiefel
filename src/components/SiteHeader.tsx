@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeToggle } from "./ThemeToggle";
 
 const TAB =
   "border-b pb-1 text-[11px] lowercase tracking-[0.2em] transition-colors hover:text-ink";
@@ -24,10 +25,13 @@ export function SiteHeader({ active }: { active: Section }) {
         <p className="text-[10px] tracking-[0.12em] text-ink-soft">an insight</p>
       </div>
 
-      <nav className="mt-6 flex items-baseline gap-7">
+      <nav className="mt-6 flex flex-wrap items-baseline gap-x-7 gap-y-2">
         {tab("/", "index", "index")}
         {tab("/gallery", "gallery", "gallery")}
         {tab("/writing", "writing", "writing")}
+        <span className="ml-auto">
+          <ThemeToggle />
+        </span>
       </nav>
     </header>
   );

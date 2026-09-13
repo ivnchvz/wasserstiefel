@@ -24,7 +24,7 @@ export function NowListening({ initial }: { initial: Payload }) {
           <pre
             role="img"
             aria-label={`${track.title} cover`}
-            className="shrink-0 text-[6px] text-ink"
+            className="shrink-0 text-[8px] text-ink"
             style={{ lineHeight: 0.82, letterSpacing: "-0.04em" }}
           >
             {ascii.join("\n")}

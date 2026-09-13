@@ -22,20 +22,20 @@ export function NowPlayingBanner({ initial }: { initial: NowPlayingPayload }) {
     <a
       key={game.url}
       href={game.url}
-      className="group mb-16 -mt-8 block animate-[fade-in_420ms_ease] bg-ink px-6 py-6 text-paper transition-opacity hover:opacity-90 sm:px-8"
+      className="group mb-16 -mt-8 block animate-[fade-in_420ms_ease] bg-slab px-6 py-6 text-slab-ink transition-opacity hover:opacity-90 sm:px-8"
     >
       <span className="flex items-center gap-6">
-        <span className="w-[124px] shrink-0 border border-paper/25 p-[2px]">
-          <HalftoneCells cols={game.cols} rows={game.rows} cells={game.cells} className="w-full text-paper" />
+        <span className="w-[124px] shrink-0 border border-slab-ink/25 p-[2px]">
+          <HalftoneCells cols={game.cols} rows={game.rows} cells={game.cells} className="w-full text-slab-ink" />
         </span>
         <span className="min-w-0">
-          <span className="flex items-center gap-2 text-[10px] tracking-[0.24em] text-paper/70">
+          <span className="flex items-center gap-2 text-[10px] tracking-[0.24em] text-slab-ink/70">
             <span className="pulse-mark">▪</span> playing now
           </span>
           <span className="mt-2 block truncate text-xl font-medium tracking-[-0.02em] group-hover:underline sm:text-2xl">
             {game.title}
           </span>
-          <span className="mt-1 block text-[10px] tracking-[0.14em] text-paper/50">steam</span>
+          <span className="mt-1 block text-[10px] tracking-[0.14em] text-slab-ink/50">steam</span>
         </span>
       </span>
     </a>
