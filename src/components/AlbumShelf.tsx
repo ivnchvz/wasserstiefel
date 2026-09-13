@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { AlbumsPayload } from "@/lib/albumsPage";
 import { HalftoneCells } from "./HalftoneCells";
+import { Reveal } from "./Reveal";
 import { Rating } from "./Rating";
 
 const TAB =
@@ -42,7 +43,11 @@ export function AlbumShelf({ initial }: { initial: AlbumsPayload }) {
           <li key={`${a.artist}-${a.title}`}>
             <span className="block border border-rule bg-paper p-[3px]">
               {a.cells.length > 0 ? (
-                <HalftoneCells cols={a.cols} rows={a.rows} cells={a.cells} label={a.title} className="w-full text-ink" />
+                /* Same as the rest of the index: the grid resolves into the
+                   cover on hover, or at centre screen on a touch device. */
+                <Reveal src={a.cover ?? ""} alt={`${a.artist} — ${a.title}`}>
+                  <HalftoneCells cols={a.cols} rows={a.rows} cells={a.cells} label={a.title} className="w-full text-ink" />
+                </Reveal>
               ) : (
                 <span className="flex aspect-square items-center justify-center p-2 text-center text-[9px] text-ink-soft">
                   {a.title}

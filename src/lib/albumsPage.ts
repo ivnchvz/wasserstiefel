@@ -10,6 +10,8 @@ export type AlbumCard = {
   title: string;
   year: string | null;
   rating: number;
+  /** The artwork itself, for the reveal on hover; the grid is what's drawn. */
+  cover: string | null;
   cols: number;
   rows: number;
   /** Row-major ink density, rounded; empty when there's no artwork. */
@@ -47,6 +49,7 @@ export async function albumsPage(page = 1): Promise<AlbumsPayload | { error: str
         title: a.title,
         year: a.year,
         rating: a.rating,
+        cover: a.cover,
         cols: COLS,
         rows: ROWS,
         cells: grid ? grid.cells.map((c) => Math.round(c * 100) / 100) : [],
