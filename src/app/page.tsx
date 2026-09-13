@@ -1,7 +1,7 @@
 import { getRecentMovies, getRecentReviews } from "@/lib/letterboxd";
 import { getRecentGames, getFinishedGames } from "@/lib/games";
 import { getSeries } from "@/lib/series";
-import { getRatedAlbums } from "@/lib/albums";
+import { albumsPage } from "@/lib/albumsPage";
 import { getNowPlayingGame } from "@/lib/steam";
 import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
 import { getRecentTracks, withArtwork } from "@/lib/music";
@@ -11,6 +11,8 @@ import { NowListening } from "@/components/NowListening";
 import { PlaylistEmbed } from "@/components/PlaylistEmbed";
 import { Intro } from "@/components/Intro";
 import { formatDate as when } from "@/lib/dates";
+import { Rating } from "@/components/Rating";
+import { AlbumShelf } from "@/components/AlbumShelf";
 import { SiteHeader } from "@/components/SiteHeader";
 import { NowPlayingBanner } from "@/components/NowPlayingBanner";
 import { halftone } from "@/lib/halftone";
@@ -21,27 +23,6 @@ import { appleEmbedUrl, BACKLOGGD_USER, LASTFM_USER, LETTERBOXD_USER, PLAYLIST }
 export const revalidate = 60;
 
 
-/** Five cells, filled by score - the grid logic applied to a rating. */
-function Rating({ value }: { value: number | null }) {
-  if (value === null) return null; // Steam has no score; an em-dash per row is just noise
-
-  const full = Math.floor(value);
-  const half = value - full >= 0.5;
-  const empty = Math.max(0, 5 - full - (half ? 1 : 0));
-
-  return (
-    <span className="inline-flex items-center gap-[3px] align-middle" role="img" aria-label={`${value} out of 5`}>
-      {Array.from({ length: full }, (_, i) => (
-        <span key={`f${i}`} className="block h-[7px] w-[7px] bg-current" />
-      ))}
-      {/* A real ½ reads as half a rating; a half-filled square just looks misdrawn. */}
-      {half && <span className="text-[12px] leading-none">½</span>}
-      {Array.from({ length: empty }, (_, i) => (
-        <span key={`e${i}`} className="block h-[7px] w-[7px] border border-current opacity-40" />
-      ))}
-    </span>
-  );
-}
 
 /** How many paragraphs show before deferring to Letterboxd. */
 const PARAGRAPH_CAP = 3;
@@ -225,7 +206,7 @@ export default async function Home() {
       getFinishedGames(12),
       getSeries("watching", 12),
       getSeries("completed", 12),
-      getRatedAlbums(12),
+      albumsPage(1),
       getRecentTracks(5),
       getFavoriteFilms(),
       getFavoriteGames(),
@@ -304,35 +285,12 @@ export default async function Home() {
         </Section>
 
 
-        <Section
-          index="02"
-          title="albums"
-          result={albums}
-        >
-          <ul className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 lg:grid-cols-6">
-            {albums.status === "ok" &&
-              albums.items.map((a) => (
-                <li key={`${a.artist}-${a.title}`}>
-                  <span className="block border border-rule bg-paper p-[3px]">
-                    {a.cover ? (
-                      <Reveal src={a.cover} alt={`${a.artist} — ${a.title}`}>
-                        <HalftoneImage src={a.cover} cols={34} rows={34} label={a.title} className="w-full text-ink" />
-                      </Reveal>
-                    ) : (
-                      <span className="flex aspect-square items-center justify-center p-2 text-center text-[9px] text-ink-soft">
-                        {a.title}
-                      </span>
-                    )}
-                  </span>
-                  <span className="mt-3 block text-[11px] leading-snug">{a.title}</span>
-                  <span className="mt-0.5 block truncate text-[10px] text-ink-soft">{a.artist}</span>
-                  <span className="mt-1 flex items-center gap-2">
-                    {a.year && <span className="text-[10px] tabular-nums text-ink-soft">{a.year}</span>}
-                    <Rating value={a.rating} />
-                  </span>
-                </li>
-              ))}
-          </ul>
+        <Section index="02" title="albums">
+          {"error" in albums ? (
+            <p className="text-[11px] text-ink-soft">not configured — {albums.error}</p>
+          ) : (
+            <AlbumShelf initial={albums} />
+          )}
         </Section>
 
 

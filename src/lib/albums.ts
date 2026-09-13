@@ -2,7 +2,6 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { parseCsv } from "./csv";
 import { findAlbumArt } from "./albumArt";
-import type { SectionResult } from "./types";
 
 export const RYM_FILE = path.join(process.cwd(), "src", "data", "rym-ratings.csv");
 export const ALBUMS_FILE = path.join(process.cwd(), "src", "data", "albums.json");
@@ -110,14 +109,20 @@ async function fromAdmin(): Promise<Album[]> {
 }
 
 const keyOf = (a: Album) => `${a.artist} ${a.title}`.toLowerCase().replace(/[^a-z0-9]/g, "");
+export type RatedAlbums =
+  | { status: "ok"; items: Album[]; total: number }
+  | { status: "unconfigured" | "error"; message: string };
 
 /**
  * RateYourMusic prohibits automated access in its robots.txt and puts the site
  * behind a Cloudflare challenge, so ratings can't be read from a profile.
  * They come from the export RYM offers its own members, plus anything logged
  * since from /admin - which wins on a clash, being the later judgement.
+ *
+ * Paged: there are far more rated albums than fit on one screen, and artwork
+ * is only looked up for the ones actually being shown.
  */
-export async function getRatedAlbums(limit = 12): Promise<SectionResult<Album>> {
+export async function getRatedAlbums({ offset = 0, limit = 12 } = {}): Promise<RatedAlbums> {
   const exported = await fromExport();
   const logged = await fromAdmin();
 
@@ -135,19 +140,20 @@ export async function getRatedAlbums(limit = 12): Promise<SectionResult<Album>> 
   // Highest rated first. There are far more perfect scores than slots, and the
   // export carries no date to break them with, so ties go to the newer record
   // - alphabetical order would just show whichever artists start with an A.
-  // Title is the final tiebreak so the result is stable between builds.
-  const top = merged
-    .sort(
-      (a, b) =>
-        b.rating - a.rating ||
-        Number(b.year ?? 0) - Number(a.year ?? 0) ||
-        a.title.localeCompare(b.title),
-    )
-    .slice(0, limit);
+  // Title is the final tiebreak so the order is stable between builds.
+  const ordered = merged.sort(
+    (a, b) =>
+      b.rating - a.rating ||
+      Number(b.year ?? 0) - Number(a.year ?? 0) ||
+      a.title.localeCompare(b.title),
+  );
+
+  const page = ordered.slice(offset, offset + limit);
   return {
     status: "ok",
+    total: ordered.length,
     items: await Promise.all(
-      top.map(async (a) => (a.cover ? a : { ...a, cover: await findAlbumArt(a.artist, a.title) })),
+      page.map(async (a) => (a.cover ? a : { ...a, cover: await findAlbumArt(a.artist, a.title) })),
     ),
   };
 }

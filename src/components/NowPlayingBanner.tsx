@@ -1,30 +1,8 @@
 "use client";
 
 import type { NowPlayingPayload } from "@/app/api/now-playing/route";
+import { HalftoneCells } from "./HalftoneCells";
 import { usePoll } from "./usePoll";
-
-const INK_FLOOR = 0.07;
-const r = (n: number) => Math.round(n * 100) / 100;
-
-function Grid({ data }: { data: NonNullable<NowPlayingPayload> }) {
-  const squares = [];
-  for (let y = 0; y < data.rows; y++) {
-    for (let x = 0; x < data.cols; x++) {
-      const d = data.cells[y * data.cols + x] ?? 0;
-      if (d < INK_FLOOR) continue;
-      const side = Math.sqrt(d) * 0.98;
-      const off = (1 - side) / 2;
-      squares.push(
-        <rect key={`${x}-${y}`} x={r(x + off)} y={r(y + off)} width={r(side)} height={r(side)} />,
-      );
-    }
-  }
-  return (
-    <svg viewBox={`0 0 ${data.cols} ${data.rows}`} className="w-full text-paper" shapeRendering="crispEdges" aria-hidden="true">
-      <g fill="currentColor">{squares}</g>
-    </svg>
-  );
-}
 
 /**
  * Whether a game is running is the only thing on the page that is true *now*
@@ -48,7 +26,7 @@ export function NowPlayingBanner({ initial }: { initial: NowPlayingPayload }) {
     >
       <span className="flex items-center gap-6">
         <span className="w-[124px] shrink-0 border border-paper/25 p-[2px]">
-          <Grid data={game} />
+          <HalftoneCells cols={game.cols} rows={game.rows} cells={game.cells} className="w-full text-paper" />
         </span>
         <span className="min-w-0">
           <span className="flex items-center gap-2 text-[10px] tracking-[0.24em] text-paper/70">
