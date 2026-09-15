@@ -11,6 +11,7 @@ import { PublishOnLeave } from "./PublishOnLeave";
 import { AdminLibrary, type LibraryConfig } from "./AdminLibrary";
 import { AdminGallery } from "./AdminGallery";
 import { AdminPosts } from "./AdminPosts";
+import { AdminFavoriteFilms } from "./AdminFavoriteFilms";
 
 export const metadata: Metadata = {
   title: "admin",
@@ -80,6 +81,7 @@ export default async function AdminPage() {
         <AdminLibrary config={SERIES} />
         <AdminLibrary config={ALBUMS} />
         <AdminPosts />
+        <AdminFavoriteFilms />
         <AdminGallery />
       </div>
     </main>

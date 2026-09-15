@@ -18,12 +18,13 @@ npm run dev
 
 ### Favourites and "now"
 
-**Favourite films** come from the Letterboxd member profile, whose four picks
-sit in a `#favourites` section. The general `User-agent: *` rules there
-disallow only sorting, genre, tag and friends paths, so the profile itself is
-fair game. Posters on that page are lazy-loaded placeholders, so the real 2:3
-artwork is read from each film page's JSON-LD `image` (`og:image` is a
-landscape crop and the wrong shape).
+**Favourite films** are the list in `src/data/favorite-films.json`, edited from
+`/admin`. They used to be read from the Letterboxd member profile, but that
+page now answers Cloudflare's bot challenge - 403, "Enable JavaScript and
+cookies to continue" - so it can't be, and shouldn't be worked around. The RSS
+diary and individual film pages still answer normally, so each film's title,
+year and poster come from its own page (`og:title` for the heading, the JSON-LD
+`image` for the 2:3 poster; `og:image` is a landscape crop).
 
 **Favourite games** come from the Backloggd profile, which serves normally and
 carries the four picks with IGDB cover art. Only Backloggd's *sub*-pages sit

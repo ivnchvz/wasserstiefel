@@ -1,5 +1,7 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import type { Favorite, SectionResult } from "./types";
-import { BACKLOGGD_USER, LETTERBOXD_USER } from "./config";
+import { BACKLOGGD_USER } from "./config";
 
 const FAVOURITES_TTL_SECONDS = 60 * 60 * 24; // favourites change rarely
 
@@ -25,49 +27,58 @@ function decode(s: string): string {
     .replace(/&amp;/g, "&");
 }
 
+export const FAVORITE_FILMS_FILE = path.join(process.cwd(), "src", "data", "favorite-films.json");
+
+/** A Letterboxd film address, or the slug on its own. */
+export function filmSlug(input: string): string | null {
+  const text = input.trim();
+  const fromUrl = text.match(/letterboxd\.com\/film\/([a-z0-9-]+)/i)?.[1];
+  const slug = fromUrl ?? text.replace(/^\/+|\/+$/g, "");
+  return /^[a-z0-9-]+$/.test(slug) ? slug : null;
+}
+
 /**
- * Letterboxd puts the four favourites on the member profile, which the
- * general robots.txt rules leave open - only sorting, genre, tag and friends
- * paths are disallowed. Posters there are lazy-loaded placeholders, so the
- * real 2:3 artwork comes from each film page's JSON-LD `image`.
+ * Read from a list kept in the repository rather than from the profile.
+ *
+ * Letterboxd put its member profiles behind Cloudflare's bot challenge - they
+ * answer 403 with "Enable JavaScript and cookies to continue" - so the
+ * favourites can no longer be read from there, and getting past that is not
+ * something to attempt. Individual film pages still answer normally, so each
+ * film's title, year and poster come from its own page.
  */
 export async function getFavoriteFilms(): Promise<SectionResult<Favorite>> {
-  const user = LETTERBOXD_USER;
+  let slugs: string[];
+  try {
+    const parsed: unknown = JSON.parse(await readFile(FAVORITE_FILMS_FILE, "utf8"));
+    slugs = Array.isArray(parsed)
+      ? parsed.map((e) => (typeof e === "object" && e !== null ? filmSlug(String((e as Record<string, unknown>).slug ?? "")) : null)).filter((s): s is string => s !== null)
+      : [];
+  } catch {
+    return { status: "ok", items: [] };
+  }
 
   try {
-    const html = await getText(`https://letterboxd.com/${encodeURIComponent(user)}/`);
-    if (!html) return { status: "error", message: "Could not load the Letterboxd profile" };
-
-    const start = html.indexOf('id="favourites"');
-    if (start === -1) return { status: "ok", items: [] };
-    // Bound to the real closing tag: a fixed-size window runs straight past
-    // the section and picks up the recent-activity posters that follow it.
-    const end = html.indexOf("</section>", start);
-    const section = html.slice(start, end === -1 ? start + 20000 : end);
-
-    const found = [...section.matchAll(/data-item-name="([^"]+)"[^>]*?data-item-slug="([^"]+)"/g)];
-
     const films = await Promise.all(
-      found.map(async ([, rawName, slug]) => {
-        const name = decode(rawName);
-        // Letterboxd formats these as "Title (1983)".
-        const m = name.match(/^(.*)\s+\((\d{4})\)$/);
-        const page = await getText(`https://letterboxd.com/film/${slug}/`);
-        // og:image is a landscape crop; the JSON-LD image is the real poster.
+      slugs.map(async (slug) => {
+        const url = `https://letterboxd.com/film/${slug}/`;
+        const page = await getText(url);
+        // og:title reads "Angst (1983)"; the JSON-LD image is the real 2:3
+        // poster, where og:image is a landscape crop.
+        const heading = page?.match(/<meta property="og:title" content="([^"]+)"/)?.[1] ?? slug;
+        const parts = decode(heading).match(/^(.*)\s+\((\d{4})\)$/);
         const image = page?.match(/"image"\s*:\s*"([^"]+)"/)?.[1] ?? null;
 
         return {
-          title: m ? m[1] : name,
-          year: m ? m[2] : null,
-          url: `https://letterboxd.com/film/${slug}/`,
+          title: parts ? parts[1] : decode(heading),
+          year: parts ? parts[2] : null,
+          url,
           image: image ? image.replace(/\\\//g, "/") : null,
         };
       }),
     );
-
     return { status: "ok", items: films };
   } catch (err) {
-    return { status: "error", message: err instanceof Error ? err.message : "Letterboxd favourites failed" };
+    return { status: "error", message: err instanceof Error ? err.message : "Letterboxd film pages failed" };
   }
 }
 
