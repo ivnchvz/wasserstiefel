@@ -76,3 +76,11 @@ export type NowListening = {
   tracks: Track[];
   ascii: string[] | null;
 };
+
+/** A track counted over a stretch of listening, rather than a single play. */
+export type TopTrack = {
+  title: string;
+  artist: string;
+  url: string | null;
+  plays: number;
+};

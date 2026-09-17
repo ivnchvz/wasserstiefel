@@ -4,7 +4,7 @@ import { getSeries } from "@/lib/series";
 import { albumsPage } from "@/lib/albumsPage";
 import { getNowPlayingGame } from "@/lib/steam";
 import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
-import { getRecentTracks, withArtwork } from "@/lib/music";
+import { getRecentTracks, getTopTracksThisYear, withArtwork } from "@/lib/music";
 import { HalftoneImage } from "@/components/Halftone";
 import { Reveal } from "@/components/Reveal";
 import { NowListening } from "@/components/NowListening";
@@ -198,7 +198,7 @@ function Section({
 }
 
 export default async function Home() {
-  const [movies, reviews, games, finished, watching, seenSeries, albums, music, favFilms, favGames, nowGame] =
+  const [movies, reviews, games, finished, watching, seenSeries, albums, music, topTracks, favFilms, favGames, nowGame] =
     await Promise.all([
       getRecentMovies(6),
       getRecentReviews(4),
@@ -208,6 +208,7 @@ export default async function Home() {
       getSeries("completed", 12),
       albumsPage(1),
       getRecentTracks(5),
+      getTopTracksThisYear(10),
       getFavoriteFilms(),
       getFavoriteGames(),
       getNowPlayingGame(),
@@ -248,17 +249,21 @@ export default async function Home() {
 
       <div className="flex flex-col gap-20">
         <Section index="01" title="now" href={fm ? `https://www.last.fm/user/${fm}` : undefined}>
-          {/* Listening is what "now" means; the playlist sits beside it rather
-              than in a section of its own. */}
+          {/* Listening is what "now" means; the playlist and the year's tally sit
+              beside it rather than in sections of their own. */}
           <div className="flex flex-wrap items-center gap-x-7">
             <input type="radio" name="now-tab" id="now-listening" defaultChecked className="peer/listening sr-only" />
             <input type="radio" name="now-tab" id="now-playlist" className="peer/playlist sr-only" />
+            <input type="radio" name="now-tab" id="now-top" className="peer/top sr-only" />
 
             <label htmlFor="now-listening" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/listening:border-ink peer-checked/listening:text-ink">
               listening
             </label>
             <label htmlFor="now-playlist" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/playlist:border-ink peer-checked/playlist:text-ink">
               playlist
+            </label>
+            <label htmlFor="now-top" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/top:border-ink peer-checked/top:text-ink">
+              most played
             </label>
 
             <div className="mt-9 hidden w-full peer-checked/listening:block">
@@ -272,6 +277,7 @@ export default async function Home() {
               )}
             </div>
 
+
             {/* Kept mounted when the other tab is shown, so switching back
                 doesn't reload the player or stop what's playing. */}
             <div className="mt-9 hidden w-full peer-checked/playlist:block">
@@ -279,6 +285,43 @@ export default async function Home() {
                 <PlaylistEmbed src={playlistEmbed} title={PLAYLIST.title} href={PLAYLIST.url} />
               ) : (
                 <p className="text-[11px] text-ink-soft">not an apple music link</p>
+              )}
+            </div>
+
+            <div className="mt-9 hidden w-full peer-checked/top:block">
+              {topTracks.status === "ok" ? (
+                topTracks.items.length === 0 ? (
+                  <p className="text-[11px] text-ink-soft">nothing counted yet</p>
+                ) : (
+                  <>
+                    <h3 className="mb-2 text-[10px] tracking-[0.18em] text-ink-soft">since january</h3>
+                    <ol className="max-w-[46rem]">
+                      {topTracks.items.map((t, i) => (
+                        <li key={`${t.artist}-${t.title}`} className="border-b border-rule first:border-t">
+                          <a
+                            href={t.url ?? "#"}
+                            className="group grid grid-cols-[1.6rem_1fr_auto] items-baseline gap-4 py-2.5"
+                          >
+                            <span className="text-[10px] tabular-nums text-ink-soft">
+                              {String(i + 1).padStart(2, "0")}
+                            </span>
+                            <span className="min-w-0 truncate text-[12px] tracking-[-0.01em]">
+                              <span className="group-hover:underline">{t.title}</span>
+                              <span className="text-ink-soft"> — {t.artist}</span>
+                            </span>
+                            <span className="text-right text-[10px] tabular-nums text-ink-soft">
+                              {t.plays} {t.plays === 1 ? "play" : "plays"}
+                            </span>
+                          </a>
+                        </li>
+                      ))}
+                    </ol>
+                  </>
+                )
+              ) : (
+                <p className="text-[11px] text-ink-soft">
+                  {topTracks.status === "unconfigured" ? "not configured" : "unavailable"} — {topTracks.message}
+                </p>
               )}
             </div>
           </div>

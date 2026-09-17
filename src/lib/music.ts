@@ -1,4 +1,4 @@
-import type { NowListening, SectionResult, Track } from "./types";
+import type { NowListening, SectionResult, TopTrack, Track } from "./types";
 import { halftone, toAscii } from "./halftone";
 import { LASTFM_USER } from "./config";
 
@@ -121,4 +121,68 @@ export async function withArtwork(tracks: Track[]): Promise<NowListening> {
   // redraws from a stored image rather than downloading it again.
   const grid = art ? await halftone(art, 44, 30) : null;
   return { tracks, ascii: grid ? toAscii(grid) : null };
+}
+
+/** Counted totals move slowly; no reason to ask more than hourly. */
+const TOP_TRACKS_TTL_SECONDS = 60 * 60;
+
+type ChartTrack = {
+  name?: string;
+  url?: string;
+  playcount?: string;
+  artist?: { "#text"?: string; name?: string };
+};
+
+/**
+ * The most played tracks since the first of January.
+ *
+ * Last.fm's ready-made periods are rolling windows - 7 days, 1, 3, 6 or 12
+ * months - and none of them is "this year". The weekly chart takes an
+ * arbitrary range instead, and honours one starting at January 1st.
+ *
+ * It counts scrobbles, so it only knows what was played since scrobbling
+ * began; it isn't a record of the whole year's listening.
+ */
+export async function getTopTracksThisYear(limit = 10): Promise<SectionResult<TopTrack>> {
+  const user = LASTFM_USER;
+  const key = process.env.LASTFM_API_KEY;
+  if (!key) return { status: "unconfigured", message: "LASTFM_API_KEY is not set" };
+
+  const from = Math.floor(Date.UTC(new Date().getUTCFullYear(), 0, 1) / 1000);
+  const url = new URL("https://ws.audioscrobbler.com/2.0/");
+  url.searchParams.set("method", "user.getweeklytrackchart");
+  url.searchParams.set("user", user);
+  url.searchParams.set("api_key", key);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("from", String(from));
+  url.searchParams.set("to", String(Math.floor(Date.now() / 1000)));
+
+  try {
+    const res = await fetch(url, { next: { revalidate: TOP_TRACKS_TTL_SECONDS } });
+    const body = await res.json();
+    if (!res.ok || body?.error) {
+      return { status: "error", message: body?.message ?? `Last.fm returned ${res.status}` };
+    }
+
+    const raw = body?.weeklytrackchart?.track;
+    const list: ChartTrack[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
+
+    const tracks = list
+      .map((t) => {
+        const title = t.name?.trim();
+        const artist = (t.artist?.["#text"] ?? t.artist?.name)?.trim();
+        const plays = Number.parseInt(t.playcount ?? "", 10);
+        return title && artist && Number.isFinite(plays)
+          ? { title, artist, url: t.url ?? null, plays }
+          : null;
+      })
+      .filter((t): t is TopTrack => t !== null)
+      // Ranked by the chart already, but sorted here so ties fall the same way
+      // every time rather than however they arrived.
+      .sort((a, b) => b.plays - a.plays || a.artist.localeCompare(b.artist) || a.title.localeCompare(b.title));
+
+    return { status: "ok", items: tracks.slice(0, limit) };
+  } catch (err) {
+    return { status: "error", message: err instanceof Error ? err.message : "Last.fm fetch failed" };
+  }
 }
