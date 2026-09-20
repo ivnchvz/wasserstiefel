@@ -1,5 +1,10 @@
 [
   {
+    "slug": "undertale",
+    "status": "completed",
+    "playedAt": "2026-09-20"
+  },
+  {
     "slug": "elden-ring",
     "status": "retired",
     "playedAt": "2026-09-13"
