@@ -9,21 +9,22 @@ type Result = {
   image: string | null;
   note: string | null;
   slug?: string;
-  id?: number;
+  id?: number | string;
   artist?: string;
+  author?: string | null;
   cover?: string | null;
 };
 
 type Entry = Record<string, unknown>;
 
 export type LibraryConfig = {
-  kind: "games" | "series" | "albums";
+  kind: "games" | "series" | "albums" | "books";
   heading: string;
   placeholder: string;
   /** Shelves to pick from. Empty when the entry is rated rather than shelved. */
   statuses: readonly string[];
   /** Which field carries the date, and which identifies an entry. */
-  dateField: "playedAt" | "watchedAt" | "ratedAt";
+  dateField: "playedAt" | "watchedAt" | "ratedAt" | "readAt";
   idField: "slug" | "id";
   /**
    * Albums aren't shelved, they're scored - so their search results offer a
@@ -194,8 +195,9 @@ export function AdminLibrary({ config }: { config: LibraryConfig }) {
   const identify = (r: Result) => ({
     ...(idField === "slug" ? { slug: r.slug } : { id: r.id }),
     title: r.title,
-    // Albums keep their artist, year and artwork, so the page needs no lookup.
+    // Albums and books keep their credit, year and artwork, so the page needs no lookup.
     ...(r.artist ? { artist: r.artist } : {}),
+    ...(r.author ? { author: r.author } : {}),
     ...(r.year ? { year: r.year } : {}),
     ...(r.cover ? { cover: r.cover } : {}),
   });

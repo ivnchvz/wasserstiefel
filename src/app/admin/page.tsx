@@ -36,6 +36,15 @@ const SERIES: LibraryConfig = {
   idField: "id",
 };
 
+const BOOKS: LibraryConfig = {
+  kind: "books",
+  heading: "books",
+  placeholder: "search open library…",
+  statuses: ["reading", "finished", "abandoned", "paused"],
+  dateField: "readAt",
+  idField: "id",
+};
+
 const ALBUMS: LibraryConfig = {
   kind: "albums",
   heading: "albums",
@@ -79,6 +88,7 @@ export default async function AdminPage() {
       <div className="flex flex-col gap-20">
         <AdminLibrary config={GAMES} />
         <AdminLibrary config={SERIES} />
+        <AdminLibrary config={BOOKS} />
         <AdminLibrary config={ALBUMS} />
         <AdminPosts />
         <AdminFavoriteFilms />

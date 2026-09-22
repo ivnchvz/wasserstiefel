@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { searchGames } from "@/lib/gameSearch";
 import { searchSeries } from "@/lib/seriesSearch";
 import { searchAlbums } from "@/lib/albumSearch";
+import { searchBooks } from "@/lib/bookSearch";
 import { adminGate } from "@/lib/adminGate";
 
 export async function GET(request: Request) {
@@ -23,6 +24,22 @@ export async function GET(request: Request) {
         image: a.cover,
         cover: a.cover,
         note: a.artist,
+      })),
+    });
+  }
+
+  if (params.get("kind") === "books") {
+    const hits = await searchBooks(q);
+    return NextResponse.json({
+      results: hits.map((b) => ({
+        key: b.id,
+        id: b.id,
+        title: b.title,
+        author: b.author,
+        year: b.year,
+        image: b.cover,
+        cover: b.cover,
+        note: [b.author, b.editions > 1 ? `${b.editions} editions` : null].filter(Boolean).join(" · ") || null,
       })),
     });
   }

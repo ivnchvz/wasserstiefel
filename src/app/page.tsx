@@ -1,6 +1,7 @@
 import { getRecentMovies, getRecentReviews } from "@/lib/letterboxd";
 import { getRecentGames, getFinishedGames } from "@/lib/games";
 import { getSeries } from "@/lib/series";
+import { getBooks, type Book } from "@/lib/books";
 import { albumsPage } from "@/lib/albumsPage";
 import { getNowPlayingGame } from "@/lib/steam";
 import { getFavoriteFilms, getFavoriteGames } from "@/lib/favorites";
@@ -197,8 +198,41 @@ function Section({
   );
 }
 
+/** A shelf of book covers, the same grid the series use. */
+function BookShelf({ items, empty }: { items: Book[]; empty: string }) {
+  if (items.length === 0) {
+    return <p className="max-w-[60ch] text-[11px] leading-relaxed text-ink-soft">{empty}</p>;
+  }
+  return (
+    <ul className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 lg:grid-cols-6">
+      {items.map((b) => (
+        <li key={b.id}>
+          <a href={b.url} className="group block">
+            <span className="block border border-rule bg-paper p-[3px] transition-colors group-hover:border-ink">
+              {b.cover ? (
+                <Reveal src={b.cover} alt={b.title}>
+                  <HalftoneImage src={b.cover} cols={30} rows={42} label={b.title} className="w-full text-ink" />
+                </Reveal>
+              ) : (
+                <span className="flex aspect-[2/3] items-center justify-center p-2 text-center text-[9px] text-ink-soft">
+                  {b.title}
+                </span>
+              )}
+            </span>
+            <span className="mt-3 block text-[11px] leading-snug group-hover:underline">{b.title}</span>
+            {b.author && <span className="mt-0.5 block truncate text-[10px] text-ink-soft">{b.author}</span>}
+            <span className="mt-1 flex flex-wrap items-center gap-x-2">
+              <Rating value={b.rating} />
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default async function Home() {
-  const [movies, reviews, games, finished, watching, seenSeries, albums, music, topTracks, favFilms, favGames, nowGame] =
+  const [movies, reviews, games, finished, watching, seenSeries, reading, readBooks, albums, music, topTracks, favFilms, favGames, nowGame] =
     await Promise.all([
       getRecentMovies(6),
       getRecentReviews(4),
@@ -206,6 +240,8 @@ export default async function Home() {
       getFinishedGames(12),
       getSeries("watching", 12),
       getSeries("completed", 12),
+      getBooks("reading", 12),
+      getBooks("finished", 12),
       albumsPage(1),
       getRecentTracks(5),
       getTopTracksThisYear(10),
@@ -506,8 +542,29 @@ export default async function Home() {
           </div>
         </Section>
 
+        <Section index="07" title="books">
+          <div className="flex flex-wrap items-center gap-x-7">
+            <input type="radio" name="books-tab" id="books-reading" defaultChecked className="peer/reading sr-only" />
+            <input type="radio" name="books-tab" id="books-read" className="peer/read sr-only" />
+
+            <label htmlFor="books-reading" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/reading:border-ink peer-checked/reading:text-ink">
+              reading
+            </label>
+            <label htmlFor="books-read" className="cursor-pointer border-b border-transparent pb-1 text-[10px] tracking-[0.2em] text-ink-soft transition-colors hover:text-ink peer-checked/read:border-ink peer-checked/read:text-ink">
+              finished
+            </label>
+
+            <div className="mt-9 hidden w-full peer-checked/reading:block">
+              {reading.status === "ok" && <BookShelf items={reading.items} empty="nothing on the go — add books from /admin" />}
+            </div>
+            <div className="mt-9 hidden w-full peer-checked/read:block">
+              {readBooks.status === "ok" && <BookShelf items={readBooks.items} empty="nothing finished yet — add books from /admin" />}
+            </div>
+          </div>
+        </Section>
+
         <Section
-          index="07"
+          index="08"
           title="played"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={games}
@@ -631,7 +688,7 @@ export default async function Home() {
         </Section>
 
         <Section
-          index="08"
+          index="09"
           title="favorite games"
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={favGames}
