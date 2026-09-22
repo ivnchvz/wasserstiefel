@@ -4,10 +4,10 @@ import { ThemeToggle } from "./ThemeToggle";
 const TAB =
   "border-b pb-1 text-[11px] lowercase tracking-[0.2em] transition-colors hover:text-ink";
 
-/** The masthead, and the three things the site is. */
-type Section = "index" | "gallery" | "writing";
+/** The masthead, and the things the site is. No tab is active on a 404. */
+type Section = "index" | "gallery" | "writing" | "log";
 
-export function SiteHeader({ active }: { active: Section }) {
+export function SiteHeader({ active }: { active?: Section }) {
   const tab = (href: string, label: string, key: Section) => (
     <Link
       href={href}
@@ -29,6 +29,7 @@ export function SiteHeader({ active }: { active: Section }) {
         {tab("/", "index", "index")}
         {tab("/gallery", "gallery", "gallery")}
         {tab("/writing", "writing", "writing")}
+        {tab("/log", "log", "log")}
         <span className="ml-auto">
           <ThemeToggle />
         </span>

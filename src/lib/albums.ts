@@ -13,6 +13,8 @@ export type Album = {
   /** 0.5 - 5, converted from RYM's 1-10 scale. */
   rating: number;
   cover: string | null;
+  /** When it was rated - only albums rated from /admin know this. */
+  ratedAt?: string | null;
 };
 
 /** Header names are matched loosely, since exports vary between versions. */
@@ -94,13 +96,15 @@ async function fromAdmin(): Promise<Album[]> {
         const title = typeof e.title === "string" ? e.title.trim() : "";
         const rating = typeof e.rating === "number" ? e.rating : NaN;
         if (!title || !Number.isFinite(rating) || rating <= 0) return null;
-        return {
+        const album: Album = {
           artist: typeof e.artist === "string" ? e.artist.trim() : "",
           title,
           year: typeof e.year === "string" ? e.year : null,
           rating,
           cover: typeof e.cover === "string" ? e.cover : null,
-        } satisfies Album;
+          ratedAt: typeof e.ratedAt === "string" ? e.ratedAt : null,
+        };
+        return album;
       })
       .filter((a): a is Album => a !== null);
   } catch {
@@ -109,6 +113,27 @@ async function fromAdmin(): Promise<Album[]> {
 }
 
 const keyOf = (a: Album) => `${a.artist} ${a.title}`.toLowerCase().replace(/[^a-z0-9]/g, "");
+/** Every rated album, admin first so it wins a clash, with no artwork looked up. */
+async function merged(): Promise<Album[]> {
+  const logged = await fromAdmin();
+  const claimed = new Set(logged.map(keyOf));
+  return [...logged, ...((await fromExport()) ?? []).filter((a) => !claimed.has(keyOf(a)))];
+}
+
+/** Albums rated from /admin, which are the only ones carrying a date. */
+export async function getDatedAlbumRatings(): Promise<Album[]> {
+  return (await fromAdmin()).filter((a) => a.ratedAt);
+}
+
+/** The best-rated records released in a given year, with artwork. */
+export async function getTopReleasesOf(year: string, limit = 6): Promise<Album[]> {
+  const top = (await merged())
+    .filter((a) => a.year === year)
+    .sort((a, b) => b.rating - a.rating || a.title.localeCompare(b.title))
+    .slice(0, limit);
+  return Promise.all(top.map(async (a) => (a.cover ? a : { ...a, cover: await findAlbumArt(a.artist, a.title) })));
+}
+
 export type RatedAlbums =
   | { status: "ok"; items: Album[]; total: number }
   | { status: "unconfigured" | "error"; message: string };

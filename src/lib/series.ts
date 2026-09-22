@@ -68,3 +68,7 @@ export async function getSeries(status: SeriesStatus, limit = 12): Promise<Secti
   if (!items) return { status: "error", message: "src/data/series.json must contain an array" };
   return { status: "ok", items: items.filter((s) => s.status === status).sort(byNewest).slice(0, limit) };
 }
+
+export async function getAllSeries(): Promise<Series[]> {
+  return (await all()) ?? [];
+}

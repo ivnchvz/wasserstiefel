@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
+import { SITE_URL } from "@/lib/config";
 import "./globals.css";
 
 const plexMono = IBM_Plex_Mono({
@@ -8,9 +9,15 @@ const plexMono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
 });
 
+const DESCRIPTION = "An insight: the films, games, series, books and music I've been into, and what I write.";
+
 export const metadata: Metadata = {
+  // Resolves the share image and canonical links to absolute URLs.
+  metadataBase: new URL(SITE_URL),
   title: "wasserstiefel",
-  description: "What I've been watching, playing and listening to.",
+  description: DESCRIPTION,
+  openGraph: { title: "wasserstiefel", description: DESCRIPTION, siteName: "wasserstiefel", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

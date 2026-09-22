@@ -93,6 +93,11 @@ async function manualGames(): Promise<Game[] | null> {
   return Promise.all(pairs.map(([entry, g]) => enrich(entry, g as Game)));
 }
 
+/** Everything logged by hand - the deliberate entries, not Steam's playtime. */
+export async function getLoggedGames(): Promise<Game[]> {
+  return (await manualGames()) ?? [];
+}
+
 const byNewest = (a: Game, b: Game) => (b.playedAt ?? "").localeCompare(a.playedAt ?? "");
 
 export async function getRecentGames(limit = 6): Promise<SectionResult<Game>> {

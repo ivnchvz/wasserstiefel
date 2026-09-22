@@ -48,19 +48,23 @@ function parse(entry: Record<string, unknown>): Book | null {
 
 const byNewest = (a: Book, b: Book) => (b.readAt ?? "").localeCompare(a.readAt ?? "");
 
-export async function getBooks(status: BookStatus, limit = 12): Promise<SectionResult<Book>> {
+async function readBooks(): Promise<Book[] | null> {
   let raw: unknown;
   try {
     raw = JSON.parse(await readFile(BOOKS_FILE, "utf8"));
   } catch {
-    return { status: "ok", items: [] };
+    return [];
   }
-  if (!Array.isArray(raw)) return { status: "error", message: "src/data/books.json must contain an array" };
+  if (!Array.isArray(raw)) return null;
+  return raw.map((e) => parse(e as Record<string, unknown>)).filter((b): b is Book => b !== null);
+}
 
-  const items = raw
-    .map((e) => parse(e as Record<string, unknown>))
-    .filter((b): b is Book => b !== null && b.status === status)
-    .sort(byNewest)
-    .slice(0, limit);
-  return { status: "ok", items };
+export async function getAllBooks(): Promise<Book[]> {
+  return (await readBooks()) ?? [];
+}
+
+export async function getBooks(status: BookStatus, limit = 12): Promise<SectionResult<Book>> {
+  const books = await readBooks();
+  if (!books) return { status: "error", message: "src/data/books.json must contain an array" };
+  return { status: "ok", items: books.filter((b) => b.status === status).sort(byNewest).slice(0, limit) };
 }

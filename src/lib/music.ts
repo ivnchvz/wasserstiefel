@@ -126,36 +126,43 @@ export async function withArtwork(tracks: Track[]): Promise<NowListening> {
 /** Counted totals move slowly; no reason to ask more than hourly. */
 const TOP_TRACKS_TTL_SECONDS = 60 * 60;
 
-type ChartTrack = {
+type ChartRow = {
   name?: string;
   url?: string;
   playcount?: string;
   artist?: { "#text"?: string; name?: string };
 };
 
+type ChartKind = "track" | "artist" | "album";
+
+/** One year's span in unix seconds, cut off at now for the year in progress. */
+export function yearSpan(year: number): { from: number; to: number } {
+  const from = Math.floor(Date.UTC(year, 0, 1) / 1000);
+  const end = Math.floor(Date.UTC(year + 1, 0, 1) / 1000) - 1;
+  return { from, to: Math.min(end, Math.floor(Date.now() / 1000)) };
+}
+
 /**
- * The most played tracks since the first of January.
- *
  * Last.fm's ready-made periods are rolling windows - 7 days, 1, 3, 6 or 12
- * months - and none of them is "this year". The weekly chart takes an
- * arbitrary range instead, and honours one starting at January 1st.
+ * months - and none of them is a calendar year. The weekly charts take an
+ * arbitrary range instead, but only when given both ends: sent `from` alone,
+ * they silently answer for the last complete week.
  *
- * It counts scrobbles, so it only knows what was played since scrobbling
- * began; it isn't a record of the whole year's listening.
+ * They count scrobbles, so they only know what was played since scrobbling
+ * began; they aren't a record of the whole year's listening.
  */
-export async function getTopTracksThisYear(limit = 10): Promise<SectionResult<TopTrack>> {
-  const user = LASTFM_USER;
+async function chart(kind: ChartKind, year: number): Promise<SectionResult<TopTrack>> {
   const key = process.env.LASTFM_API_KEY;
   if (!key) return { status: "unconfigured", message: "LASTFM_API_KEY is not set" };
 
-  const from = Math.floor(Date.UTC(new Date().getUTCFullYear(), 0, 1) / 1000);
+  const { from, to } = yearSpan(year);
   const url = new URL("https://ws.audioscrobbler.com/2.0/");
-  url.searchParams.set("method", "user.getweeklytrackchart");
-  url.searchParams.set("user", user);
+  url.searchParams.set("method", `user.getweekly${kind}chart`);
+  url.searchParams.set("user", LASTFM_USER);
   url.searchParams.set("api_key", key);
   url.searchParams.set("format", "json");
   url.searchParams.set("from", String(from));
-  url.searchParams.set("to", String(Math.floor(Date.now() / 1000)));
+  url.searchParams.set("to", String(to));
 
   try {
     const res = await fetch(url, { next: { revalidate: TOP_TRACKS_TTL_SECONDS } });
@@ -164,25 +171,49 @@ export async function getTopTracksThisYear(limit = 10): Promise<SectionResult<To
       return { status: "error", message: body?.message ?? `Last.fm returned ${res.status}` };
     }
 
-    const raw = body?.weeklytrackchart?.track;
-    const list: ChartTrack[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    const raw = body?.[`weekly${kind}chart`]?.[kind];
+    const list: ChartRow[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
 
-    const tracks = list
+    const rows = list
       .map((t) => {
         const title = t.name?.trim();
-        const artist = (t.artist?.["#text"] ?? t.artist?.name)?.trim();
+        // An artist chart's row *is* the artist.
+        const artist = kind === "artist" ? title : (t.artist?.["#text"] ?? t.artist?.name)?.trim();
         const plays = Number.parseInt(t.playcount ?? "", 10);
-        return title && artist && Number.isFinite(plays)
-          ? { title, artist, url: t.url ?? null, plays }
-          : null;
+        return title && artist && Number.isFinite(plays) ? { title, artist, url: t.url ?? null, plays } : null;
       })
       .filter((t): t is TopTrack => t !== null)
       // Ranked by the chart already, but sorted here so ties fall the same way
       // every time rather than however they arrived.
       .sort((a, b) => b.plays - a.plays || a.artist.localeCompare(b.artist) || a.title.localeCompare(b.title));
 
-    return { status: "ok", items: tracks.slice(0, limit) };
+    return { status: "ok", items: rows };
   } catch (err) {
     return { status: "error", message: err instanceof Error ? err.message : "Last.fm fetch failed" };
   }
+}
+
+/** The most played tracks since the first of January. */
+export async function getTopTracksThisYear(limit = 10): Promise<SectionResult<TopTrack>> {
+  const result = await chart("track", new Date().getUTCFullYear());
+  return result.status === "ok" ? { status: "ok", items: result.items.slice(0, limit) } : result;
+}
+
+export type YearListening = {
+  scrobbles: number;
+  tracks: TopTrack[];
+  artists: TopTrack[];
+  albums: TopTrack[];
+};
+
+/** A year's listening, whole: the total comes from summing the full artist chart. */
+export async function getYearListening(year: number, limit = 5): Promise<YearListening | null> {
+  const [tracks, artists, albums] = await Promise.all([chart("track", year), chart("artist", year), chart("album", year)]);
+  if (tracks.status !== "ok" || artists.status !== "ok" || albums.status !== "ok") return null;
+  return {
+    scrobbles: artists.items.reduce((n, a) => n + a.plays, 0),
+    tracks: tracks.items.slice(0, limit),
+    artists: artists.items.slice(0, limit),
+    albums: albums.items.slice(0, limit),
+  };
 }
