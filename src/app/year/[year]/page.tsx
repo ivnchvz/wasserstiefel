@@ -11,7 +11,9 @@ import { getLoggedYears } from "@/lib/log";
 import { getYearReview } from "@/lib/yearReview";
 import type { TopTrack } from "@/lib/types";
 
-export const revalidate = 3600;
+// Mostly slow-moving counts, but the listening figures shouldn't trail far
+// behind the rest of the site.
+export const revalidate = 300;
 
 type Params = { params: Promise<{ year: string }> };
 

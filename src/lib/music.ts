@@ -123,8 +123,12 @@ export async function withArtwork(tracks: Track[]): Promise<NowListening> {
   return { tracks, ascii: grid ? toAscii(grid) : null };
 }
 
-/** Counted totals move slowly; no reason to ask more than hourly. */
-const TOP_TRACKS_TTL_SECONDS = 60 * 60;
+/**
+ * The point of a tally beside "now" is that it keeps up with what's playing,
+ * so it's re-counted every few minutes rather than hourly. The chart itself
+ * is one request however long the range, so this costs little.
+ */
+const TOP_TRACKS_TTL_SECONDS = 5 * 60;
 
 type ChartRow = {
   name?: string;
