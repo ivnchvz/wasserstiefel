@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { Favorite, SectionResult } from "./types";
-import { BACKLOGGD_USER } from "./config";
+import { getGameBySlug } from "./backloggd";
 
 const FAVOURITES_TTL_SECONDS = 60 * 60 * 24; // favourites change rarely
 
@@ -15,10 +15,6 @@ async function getText(url: string): Promise<string | null> {
   return res.ok ? res.text() : null;
 }
 
-function attr(tag: string, name: string): string | null {
-  return tag.match(new RegExp(`${name}="([^"]*)"`))?.[1] ?? null;
-}
-
 function decode(s: string): string {
   return s
     .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)))
@@ -28,6 +24,14 @@ function decode(s: string): string {
 }
 
 export const FAVORITE_FILMS_FILE = path.join(process.cwd(), "src", "data", "favorite-films.json");
+
+export const FAVORITE_GAMES_FILE = path.join(process.cwd(), "src", "data", "favorite-games.json");
+
+/** A Backloggd slug, as admin's search returns it. */
+export function gameSlug(input: string): string | null {
+  const slug = input.trim();
+  return /^[a-z0-9-]+$/.test(slug) ? slug : null;
+}
 
 /** A Letterboxd film address, or the slug on its own. */
 export function filmSlug(input: string): string | null {
@@ -83,44 +87,32 @@ export async function getFavoriteFilms(): Promise<SectionResult<Favorite>> {
 }
 
 /**
- * Backloggd's *profile* page serves normally and carries the favourites with
- * IGDB cover art. Only its sub-pages (games, journal, played) sit behind the
- * proof-of-work wall, which is why recently-played still comes from Steam.
- * Nothing here works around that wall; if the profile is ever closed off too,
- * this degrades to an empty section.
+ * Read from a list kept in the repository, for the same reason as the films:
+ * Backloggd's profile page now sits behind the proof-of-work wall too. Picks
+ * are made from its search in admin, and each game's title, year and cover
+ * come from its own page, which answers normally.
  */
 export async function getFavoriteGames(): Promise<SectionResult<Favorite>> {
-  const user = BACKLOGGD_USER;
-
+  let slugs: string[];
   try {
-    const html = await getText(`https://backloggd.com/u/${encodeURIComponent(user)}/`);
-    if (!html) return { status: "error", message: "Could not load the Backloggd profile" };
-    if (/id="anubis|Making sure you&#39;re not a bot/i.test(html)) {
-      return { status: "error", message: "Backloggd served a bot challenge" };
-    }
-
-    const start = html.indexOf('id="profile-favorites"');
-    if (start === -1) return { status: "ok", items: [] };
-    const section = html.slice(start, start + 20000);
-
-    const items: Favorite[] = [];
-    for (const card of section.matchAll(/<a href="\/games\/([^"]+?)\/?"[\s\S]{0,900}?<img([^>]*)>/g)) {
-      const [, slug, imgTag] = card;
-      const title = decode(attr(`<img${imgTag}>`, "alt") ?? slug);
-      // data-src holds the 2x cover, a better source for the halftone pass.
-      const cover = attr(`<img${imgTag}>`, "data-src") ?? attr(`<img${imgTag}>`, "src");
-
-      if (items.some((i) => i.url.endsWith(`/${slug}/`))) continue;
-      items.push({
-        title,
-        year: null,
-        url: `https://backloggd.com/games/${slug}/`,
-        image: cover ? decode(cover) : null,
-      });
-    }
-
-    return { status: "ok", items };
-  } catch (err) {
-    return { status: "error", message: err instanceof Error ? err.message : "Backloggd favourites failed" };
+    const parsed: unknown = JSON.parse(await readFile(FAVORITE_GAMES_FILE, "utf8"));
+    slugs = Array.isArray(parsed)
+      ? parsed.map((e) => (typeof e === "object" && e !== null ? gameSlug(String((e as Record<string, unknown>).slug ?? "")) : null)).filter((s): s is string => s !== null)
+      : [];
+  } catch {
+    return { status: "ok", items: [] };
   }
+
+  const items = await Promise.all(
+    slugs.map(async (slug) => {
+      const game = await getGameBySlug(slug);
+      return {
+        title: game ? decode(game.title) : slug,
+        year: game?.year ?? null,
+        url: game?.url ?? `https://backloggd.com/games/${slug}/`,
+        image: game?.cover ?? null,
+      };
+    }),
+  );
+  return { status: "ok", items };
 }

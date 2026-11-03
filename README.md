@@ -26,10 +26,11 @@ diary and individual film pages still answer normally, so each film's title,
 year and poster come from its own page (`og:title` for the heading, the JSON-LD
 `image` for the 2:3 poster; `og:image` is a landscape crop).
 
-**Favourite games** come from the Backloggd profile, which serves normally and
-carries the four picks with IGDB cover art. Only Backloggd's *sub*-pages sit
-behind the proof-of-work wall — nothing here works around it, and if the
-profile is ever closed off too, the section degrades to empty.
+**Favourite games** are the list in `src/data/favorite-games.json`, picked from
+Backloggd's search in `/admin`. The Backloggd profile now sits behind the
+proof-of-work wall too, and nothing here works around it. Individual game pages
+still answer normally, so each game's title, year and cover come from its own
+page.
 
 **Now playing (game)** uses Steam's `GetPlayerSummaries`, which includes
 `gameextrainfo` only while a game is actually running — its presence *is* the

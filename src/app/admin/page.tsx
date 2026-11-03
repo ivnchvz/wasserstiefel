@@ -12,6 +12,7 @@ import { AdminLibrary, type LibraryConfig } from "./AdminLibrary";
 import { AdminGallery } from "./AdminGallery";
 import { AdminPosts } from "./AdminPosts";
 import { AdminFavoriteFilms } from "./AdminFavoriteFilms";
+import { AdminFavoriteGames } from "./AdminFavoriteGames";
 
 export const metadata: Metadata = {
   title: "admin",
@@ -92,6 +93,7 @@ export default async function AdminPage() {
         <AdminLibrary config={ALBUMS} />
         <AdminPosts />
         <AdminFavoriteFilms />
+        <AdminFavoriteGames />
         <AdminGallery />
       </div>
     </main>

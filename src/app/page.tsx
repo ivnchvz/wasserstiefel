@@ -693,7 +693,12 @@ export default async function Home() {
           href={bl ? `https://backloggd.com/u/${bl}/` : undefined}
           result={favGames}
         >
-          {favGames.status === "ok" && <FavouriteGrid items={favGames.items} />}
+          {favGames.status === "ok" &&
+            (favGames.items.length === 0 ? (
+              <p className="max-w-[60ch] text-[11px] leading-relaxed text-ink-soft">nothing picked yet — add games from /admin</p>
+            ) : (
+              <FavouriteGrid items={favGames.items} />
+            ))}
         </Section>
 
       </div>
